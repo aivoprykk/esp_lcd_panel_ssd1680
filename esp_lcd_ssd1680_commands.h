@@ -14,7 +14,7 @@
 #define SSD1680_CMD_SWRST                   0x12
 // --- Driver output control
 #define SSD1680_CMD_OUTPUT_CTRL             0x01
-#define SSD1680_PARAM_OUTPUT_CTRL           ((uint8_t[]) {0xc7, 0x00, 0x00})
+#define SSD1680_PARAM_OUTPUT_CTRL           ((uint8_t[]) {0x27, 0x01, 0x00})
 // --- Data Entry Sequence Setting
 #define SSD1680_CMD_DATA_ENTRY_MODE         0x11
 // A [1:0] = ID[1:0], A[2] = AM
@@ -46,7 +46,7 @@
 // Fix Level Setting for VBD VSS,
 // GS Transition control Follow LUT
 // GS Transition setting for VBD LUT1
-#define SSD1680_PARAM_BORDER_WAVEFORM       0x01
+#define SSD1680_PARAM_BORDER_WAVEFORM       0x05
 // --- Temperature Sensor Control
 #define SSD1680_CMD_SET_TEMP_SENSOR         0x18
 // Select to use internal sensor, 0x48 for external
@@ -56,7 +56,7 @@
 // Load temperature value
 // Load LUT with DISPLAY mode 1
 // Disable clock signal
-#define SSD1680_PARAM_DISP_UPDATE_MODE_1      0xb1
+#define SSD1680_PARAM_DISP_UPDATE_MODE_1      0xf7
 // Display with DISPLAY Mode 2
 #define SSD1680_PARAM_DISP_WITH_MODE_2        0xcf
 // Enable clock signal

@@ -24,8 +24,16 @@
 #include "esp_lcd_ssd1680_commands.h"
 
 #define SSD1680_LUT_SIZE                   159
-#define SSD1680_EPD_1IN54_V2_WIDTH         200
-#define SSD1680_EPD_1IN54_V2_HEIGHT        200
+#define SSD1680_LUT_SIZE_1                 76
+#define SSD1680_EPD_2IN13_V2_WIDTH         128
+#define SSD1680_EPD_2IN13_V2_HEIGHT        250
+
+#define SSD1680_EPD_2IN13_V2_PIXELS              (SSD1680_EPD_2IN13_V2_HEIGHT * SSD1680_EPD_2IN13_V2_WIDTH)
+
+#define SSD1680_EPD_2IN13_V2_NUMOF_COLUMS        SSD1680_EPD_2IN13_V2_WIDTH
+#define SSD1680_EPD_2IN13_V2_NUMOF_ROWS_PER_PAGE 8
+#define SSD1680_EPD_2IN13_V2_PAGES               (SSD1680_EPD_2IN13_V2_NUMOF_COLUMS / SSD1680_EPD_2IN13_V2_NUMOF_ROWS_PER_PAGE)
+#define SSD1680_EPD_2IN13_V2_BUFFER_SIZE         (SSD1680_EPD_2IN13_V2_HEIGHT * SSD1680_EPD_2IN13_V2_PAGES)
 
 
 static const char *TAG = "lcd_panel.epaper";
@@ -261,7 +269,7 @@ esp_lcd_new_panel_ssd1680(const esp_lcd_panel_io_handle_t io, const esp_lcd_pane
     epaper_panel->_mirror_x = false;
     epaper_panel->_mirror_y = false;
     epaper_panel->_framebuffer = NULL;
-    epaper_panel->gap_x = 0;
+    epaper_panel->gap_x = 6;
     epaper_panel->gap_y = 0;
     epaper_panel->bitmap_color = SSD1680_EPAPER_BITMAP_BLACK;
     epaper_panel->full_refresh = true;
@@ -284,8 +292,7 @@ esp_lcd_new_panel_ssd1680(const esp_lcd_panel_io_handle_t io, const esp_lcd_pane
     *ret_panel = &(epaper_panel->base);
     // --- Init framebuffer
     if (!(epaper_panel->_non_copy_mode)) {
-        epaper_panel->_framebuffer = heap_caps_malloc(SSD1680_EPD_1IN54_V2_WIDTH * SSD1680_EPD_1IN54_V2_HEIGHT / 8,
-                                     MALLOC_CAP_DMA);
+        epaper_panel->_framebuffer = heap_caps_malloc(SSD1680_EPD_2IN13_V2_BUFFER_SIZE, MALLOC_CAP_DMA);
         ESP_RETURN_ON_FALSE(epaper_panel->_framebuffer, ESP_ERR_NO_MEM, TAG, "epaper_panel_draw_bitmap allocating buffer memory err");
     }
     // --- Init GPIO
@@ -352,15 +359,12 @@ static esp_err_t epaper_panel_reset(esp_lcd_panel_t *panel)
 
     // perform hardware reset
     if (epaper_panel->reset_gpio_num >= 0) {
-        ESP_RETURN_ON_ERROR(gpio_set_level(epaper_panel->reset_gpio_num, epaper_panel->reset_level), TAG,
-                            "gpio_set_level error");
+        ESP_RETURN_ON_ERROR(gpio_set_level(epaper_panel->reset_gpio_num, epaper_panel->reset_level), TAG, "gpio_set_level error");
         vTaskDelay(pdMS_TO_TICKS(10));
-        ESP_RETURN_ON_ERROR(gpio_set_level(epaper_panel->reset_gpio_num, !epaper_panel->reset_level), TAG,
-                            "gpio_set_level error");
+        ESP_RETURN_ON_ERROR(gpio_set_level(epaper_panel->reset_gpio_num, !epaper_panel->reset_level), TAG, "gpio_set_level error");
         vTaskDelay(pdMS_TO_TICKS(10));
     } else {
-        ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, SSD1680_CMD_SWRST, NULL, 0), TAG,
-                            "param SSD1680_CMD_SWRST err");
+        ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, SSD1680_CMD_SWRST, NULL, 0), TAG, "param SSD1680_CMD_SWRST err");
     }
     panel_epaper_wait_busy(panel);
     return ESP_OK;
@@ -379,33 +383,43 @@ static esp_err_t epaper_panel_init(esp_lcd_panel_t *panel)
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     esp_lcd_panel_io_handle_t io = epaper_panel->io;
     // --- SWRST
-    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, SSD1680_CMD_SWRST, NULL, 0), TAG,
-                        "param SSD1680_CMD_SWRST err");
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, SSD1680_CMD_SWRST, NULL, 0), TAG, "param SSD1680_CMD_SWRST err");
     panel_epaper_wait_busy(panel);
     // --- Driver Output Control
-    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_OUTPUT_CTRL,
-                        SSD1680_PARAM_OUTPUT_CTRL, 3), TAG, "SSD1680_CMD_OUTPUT_CTRL err");
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_OUTPUT_CTRL, SSD1680_PARAM_OUTPUT_CTRL, 3), TAG, "SSD1680_CMD_OUTPUT_CTRL err");
+
+    // --- Data entry control
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_DATA_ENTRY_MODE, (uint8_t[]) {
+        SSD1680_PARAM_DATA_ENTRY_MODE_3
+    }, 1), TAG, "SSD1680_CMD_DATA_ENTRY_MODE err");
+
+    // --- Set RAMX Start/End Position
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_SET_RAMX_START_END_POS, (uint8_t[]) {
+        0x00, 0x7f
+    }, 2), TAG, "SSD1680_CMD_SET_RAMX_START_END_POS err");
+
+    // --- Set RAMY Start/End Position
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_SET_RAMY_START_END_POS, (uint8_t[]) {
+        0x00, 0x00, 0x00, 0x7f
+    }, 4), TAG, "SSD1680_CMD_SET_RAMY_START_END_POS err");
 
     // --- Border Waveform Control
-    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_SET_BORDER_WAVEFORM, (uint8_t[]) {
-        SSD1680_PARAM_BORDER_WAVEFORM
-    }, 1), TAG, "SSD1680_CMD_SET_BORDER_WAVEFORM err");
+        ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_SET_BORDER_WAVEFORM, (uint8_t[]) {
+            SSD1680_PARAM_BORDER_WAVEFORM
+        }, 1), TAG, "SSD1680_CMD_SET_BORDER_WAVEFORM err");
 
     // --- Temperature Sensor Control
     ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_SET_TEMP_SENSOR, (uint8_t[]) {
         SSD1680_PARAM_TEMP_SENSOR
     }, 1), TAG, "SSD1680_CMD_SET_TEMP_SENSOR err");
+
     // --- Load built-in waveform LUT
     ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_SET_DISP_UPDATE_CTRL, (uint8_t[]) {
         SSD1680_PARAM_DISP_UPDATE_MODE_1
     }, 1), TAG, "SSD1680_CMD_SET_DISP_UPDATE_CTRL err");
-    // --- Display end option
-    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_SET_END_OPTION, (uint8_t[]) {
-        SSD1680_PARAM_END_OPTION_KEEP
-    }, 1), TAG, "SSD1680_CMD_SET_END_OPTION err");
+
     // --- Active Display Update Sequence
-    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, SSD1680_CMD_ACTIVE_DISP_UPDATE_SEQ, NULL, 0), TAG,
-                        "param SSD1680_CMD_SET_DISP_UPDATE_CTRL err");
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, SSD1680_CMD_ACTIVE_DISP_UPDATE_SEQ, NULL, 0), TAG, "param SSD1680_CMD_SET_DISP_UPDATE_CTRL err");
     panel_epaper_wait_busy(panel);
 
     return ESP_OK;
@@ -450,10 +464,8 @@ epaper_panel_draw_bitmap(esp_lcd_panel_t *panel, int x_start, int y_start, int x
     // --- Set cursor & data entry sequence
     if ((!(epaper_panel->_mirror_x)) && (!(epaper_panel->_mirror_y))) {
         // --- Cursor Settings
-        ESP_RETURN_ON_ERROR(epaper_set_area(epaper_panel->io, x_start, y_start, x_end, y_end), TAG,
-                            "epaper_set_area() error");
-        ESP_RETURN_ON_ERROR(epaper_set_cursor(epaper_panel->io, x_start, y_start), TAG,
-                            "epaper_set_cursor() error");
+        ESP_RETURN_ON_ERROR(epaper_set_area(epaper_panel->io, x_start, y_start, x_end, y_end), TAG, "epaper_set_area() error");
+        ESP_RETURN_ON_ERROR(epaper_set_cursor(epaper_panel->io, x_start, y_start), TAG, "epaper_set_cursor() error");
         // --- Data Entry Sequence Setting
         ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_DATA_ENTRY_MODE, (uint8_t[]) {
             SSD1680_PARAM_DATA_ENTRY_MODE_3
@@ -461,10 +473,8 @@ epaper_panel_draw_bitmap(esp_lcd_panel_t *panel, int x_start, int y_start, int x
     }
     if ((!(epaper_panel->_mirror_x)) && (epaper_panel->_mirror_y)) {
         // --- Cursor Settings
-        ESP_RETURN_ON_ERROR(epaper_set_area(epaper_panel->io, x_start, y_start + len_y - 1, x_end, y_end + len_y - 1), TAG,
-                            "epaper_set_area() error");
-        ESP_RETURN_ON_ERROR(epaper_set_cursor(epaper_panel->io, x_start, y_start + len_y - 1), TAG,
-                            "epaper_set_cursor() error");
+        ESP_RETURN_ON_ERROR(epaper_set_area(epaper_panel->io, x_start, y_start + len_y - 1, x_end, y_end + len_y - 1), TAG, "epaper_set_area() error");
+        ESP_RETURN_ON_ERROR(epaper_set_cursor(epaper_panel->io, x_start, y_start + len_y - 1), TAG, "epaper_set_cursor() error");
         // --- Data Entry Sequence Setting
         ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_DATA_ENTRY_MODE, (uint8_t[]) {
             SSD1680_PARAM_DATA_ENTRY_MODE_1
@@ -472,10 +482,8 @@ epaper_panel_draw_bitmap(esp_lcd_panel_t *panel, int x_start, int y_start, int x
     }
     if (((epaper_panel->_mirror_x)) && (!(epaper_panel->_mirror_y))) {
         // --- Cursor Settings
-        ESP_RETURN_ON_ERROR(epaper_set_area(epaper_panel->io, x_start, y_start + len_y - 1, x_end, y_end + len_y - 1), TAG,
-                            "epaper_set_area() error");
-        ESP_RETURN_ON_ERROR(epaper_set_cursor(epaper_panel->io, x_start, y_start + len_y - 1), TAG,
-                            "epaper_set_cursor() error");
+        ESP_RETURN_ON_ERROR(epaper_set_area(epaper_panel->io, x_start, y_start + len_y - 1, x_end, y_end + len_y - 1), TAG, "epaper_set_area() error");
+        ESP_RETURN_ON_ERROR(epaper_set_cursor(epaper_panel->io, x_start, y_start + len_y - 1), TAG, "epaper_set_cursor() error");
         // --- Data Entry Sequence Setting
         ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_DATA_ENTRY_MODE, (uint8_t[]) {
             SSD1680_PARAM_DATA_ENTRY_MODE_1
@@ -483,10 +491,8 @@ epaper_panel_draw_bitmap(esp_lcd_panel_t *panel, int x_start, int y_start, int x
     }
     if (((epaper_panel->_mirror_x)) && (epaper_panel->_mirror_y)) {
         // --- Cursor Settings
-        ESP_RETURN_ON_ERROR(epaper_set_area(epaper_panel->io, x_start, y_start, x_end, y_end), TAG,
-                            "epaper_set_area() error");
-        ESP_RETURN_ON_ERROR(epaper_set_cursor(epaper_panel->io, x_start, y_start), TAG,
-                            "epaper_set_cursor() error");
+        ESP_RETURN_ON_ERROR(epaper_set_area(epaper_panel->io, x_start, y_start, x_end, y_end), TAG, "epaper_set_area() error");
+        ESP_RETURN_ON_ERROR(epaper_set_cursor(epaper_panel->io, x_start, y_start), TAG, "epaper_set_cursor() error");
         // --- Data Entry Sequence Setting
         ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_DATA_ENTRY_MODE, (uint8_t[]) {
             SSD1680_PARAM_DATA_ENTRY_MODE_3
@@ -558,7 +564,7 @@ static esp_err_t epaper_panel_disp_on_off(esp_lcd_panel_t *panel, bool on_off)
     if (on_off) {
         // Turn on display
         ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_SET_DISP_UPDATE_CTRL, (uint8_t[]) {
-            SSD1680_PARAM_DISP_UPDATE_MODE_1
+            0xc7
         }, 1), TAG, "SSD1680_CMD_SET_DISP_UPDATE_CTRL err");
         ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, SSD1680_CMD_ACTIVE_DISP_UPDATE_SEQ, NULL, 0), TAG,
                             "SSD1680_CMD_ACTIVE_DISP_UPDATE_SEQ err");
