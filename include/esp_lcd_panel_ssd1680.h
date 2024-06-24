@@ -40,6 +40,9 @@ typedef struct {
     int busy_gpio_num;         /*!< GPIO num of the BUSY pin */
     bool non_copy_mode;        /*!< If the bitmap would be copied or not.
                                 *   Image rotation and mirror is limited when enabling. */
+    int16_t width;             /*!< Width of the e-paper panel */
+    int16_t height;            /*!< Height of the e-paper panel */
+    size_t buffer_size;        /*!< Size of the buffer used to store the bitmap */
 } esp_lcd_ssd1680_config_t;
 
 /**
@@ -51,7 +54,8 @@ typedef struct {
  */
 typedef enum {
     SSD1680_EPAPER_BITMAP_BLACK, /*!< Draw the bitmap in black */
-    SSD1680_EPAPER_BITMAP_RED    /*!< Draw the bitmap in red */
+    SSD1680_EPAPER_BITMAP_RED,   /*!< Draw the bitmap in red */
+    SSD1680_EPAPER_BITMAP_BOTH   /*!< Draw the bitmap in both black and red */
 } esp_lcd_ssd1680_bitmap_color_t;
 
 /**
@@ -129,6 +133,25 @@ esp_err_t epaper_panel_register_event_callbacks_ssd1680(esp_lcd_panel_t *panel, 
  */
 esp_err_t epaper_panel_set_custom_lut_ssd1680(esp_lcd_panel_t *panel, uint8_t *lut, size_t size);
 
+uint8_t is_xy_swapped(esp_lcd_panel_t *panel);
+uint8_t is_mirrored(esp_lcd_panel_t *panel);
+
+esp_err_t epaper_panel_clear_screen_ssd1680(esp_lcd_panel_t *panel, uint8_t * color_data, uint8_t color);
+
+typedef enum {
+    INIT_MODE_PARTIAL = 0x00,
+    INIT_MODE_FULL = 0x01,
+    INIT_MODE_FAST = 0x02,
+} epaper_panel_init_mode_t;
+
+esp_err_t epaper_panel_init_screen_ssd1680(esp_lcd_panel_t *panel,  epaper_panel_init_mode_t next_init_mode);
+esp_err_t epaper_panel_set_next_init_mode_ssd1680(esp_lcd_panel_t *panel, epaper_panel_init_mode_t next_init_mode);
+
+typedef enum {
+    SLEEP_MODE_NORMAL = 0x00,
+    SLEEP_MODE_DEEP_1 = 0x01,
+    SLEEP_MODE_DEEP_2 = 0x02,
+} epaper_panel_sleep_mode_t;
 
 #ifdef __cplusplus
 }

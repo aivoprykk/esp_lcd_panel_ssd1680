@@ -1,8 +1,21 @@
 dependencies:
   idf: ">=5.0"
-  lvgl/lvgl: "~8.3.0"
-  esp_lcd_ssd1680: 
+  lvgl/lvgl: "=8.4"
+  esp_lcd_panel_ssd1680: 
     # I am specifying the path of the component because the component
     # had not been published to the ESP Component Registry by the time 
     # I write this example.
     path: "../../../"
+  logger_common: 
+    # I am specifying the path of the component because the component
+    # had not been published to the ESP Component Registry by the time 
+    # I write this example.
+    path: "../../../../logger_common"
+  logger_str: 
+    path: "../../../../logger_str"
+  display:
+    path: "../../../../display"
+  logger_adc:
+    path: "../../../../logger_adc"
+  logger_button:
+    path: "../../../../logger_button"

@@ -14,7 +14,7 @@
 #define SSD1680_CMD_SWRST                   0x12
 // --- Driver output control
 #define SSD1680_CMD_OUTPUT_CTRL             0x01
-#define SSD1680_PARAM_OUTPUT_CTRL           ((uint8_t[]) {0x27, 0x01, 0x00})
+#define SSD1680_PARAM_OUTPUT_CTRL           ((uint8_t[]) {0x00, 0x01, 0x00}) // 100000000 = 01 00 = 256 gates used of 296
 // --- Data Entry Sequence Setting
 #define SSD1680_CMD_DATA_ENTRY_MODE         0x11
 // A [1:0] = ID[1:0], A[2] = AM
@@ -57,14 +57,14 @@
 // Load LUT with DISPLAY mode 1
 // Disable clock signal
 #define SSD1680_PARAM_DISP_UPDATE_MODE_1      0xf7
-// Display with DISPLAY Mode 2
-#define SSD1680_PARAM_DISP_WITH_MODE_2        0xcf
 // Enable clock signal
 // Enable Analog
 // Display with DISPLAY Mode 2
 // Disable Analog
 // Disable OSC
 #define SSD1680_PARAM_DISP_UPDATE_MODE_2      0xcf
+// Display with DISPLAY Mode 3
+#define SSD1680_PARAM_DISP_UPDATE_MODE_3        0xc0
 // --- Active display update sequence
 #define SSD1680_CMD_ACTIVE_DISP_UPDATE_SEQ  0x20
 // ---
@@ -101,4 +101,11 @@
 #define SSD1680_CMD_WRITE_RED_VRAM          0x26
 
 #define SSD1680_CMD_SLEEP_CTRL              0x10
+// normal sleep mode
+#define SSD1680_PARAM_SLEEP_MODE_0          0x00
+// deep sleep 1
 #define SSD1680_PARAM_SLEEP_MODE_1          0x01
+// deep sleep 2
+#define SSD1680_PARAM_SLEEP_MODE_2          0x03
+// used for exit sleep mode
+#define SSD1680_PARAM_SLEEP_MODE_F          0xff

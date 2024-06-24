@@ -1,0 +1,21 @@
+dependencies:
+  esp_lcd_panel_ssd1680:
+    component_hash: null
+    source:
+      path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/esp_lcd_panel_ssd1680
+      type: local
+    version: 0.1.0
+  idf:
+    component_hash: null
+    source:
+      type: idf
+    version: 5.2.0
+  logger_common:
+    component_hash: null
+    source:
+      path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/logger_common
+      type: local
+    version: 0.1.0
+manifest_hash: 7c50dace2651b7d212b30367ae19fe98058ebeae536f35193a5f5e8f6f1a0ff5
+target: esp32
+version: 1.0.0
