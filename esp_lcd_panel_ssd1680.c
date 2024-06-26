@@ -102,7 +102,7 @@ typedef struct {
     ram_params_t _ram_params;
     int16_t width;
     int16_t height;
-    uint8_t *_clearbuffer;
+    //const uint8_t *clearbuffer;
     uint8_t *_framebuffer;
     size_t _framebuffer_size;
     epaper_panel_init_mode_t next_init_mode;
@@ -119,7 +119,7 @@ static void epaper_driver_gpio_isr_handler(void *arg);
 static esp_err_t epaper_set_lut(esp_lcd_panel_io_handle_t io, const uint8_t *lut);
 static esp_err_t epaper_set_cursor(esp_lcd_panel_io_handle_t io, uint8_t cur_x, uint8_t cur_y, uint8_t cur_y1);
 static esp_err_t epaper_set_area(esp_lcd_panel_io_handle_t io, uint8_t start_x, uint8_t end_x, uint8_t start_y, uint8_t start_y1, uint8_t end_y, uint8_t end_y1);
-static esp_err_t panel_epaper_set_vram(esp_lcd_panel_io_handle_t io, uint8_t *bw_bitmap, uint8_t *red_bitmap, size_t size);
+static esp_err_t panel_epaper_set_vram(esp_lcd_panel_io_handle_t io, const uint8_t *bw_bitmap, const uint8_t *red_bitmap, size_t size);
 // --- SSD1680 specific functions, exported to user in public header file
 // extern esp_err_t esp_lcd_new_panel_ssd1680(const esp_lcd_panel_io_handle_t io, const esp_lcd_panel_dev_config_t *panel_dev_config,
 //                                            esp_lcd_panel_handle_t *ret_panel);
@@ -321,7 +321,7 @@ static esp_err_t panel_epaper_wait_busy(esp_lcd_panel_t *panel) {
     return ESP_OK;
 }
 
-esp_err_t panel_epaper_set_vram(esp_lcd_panel_io_handle_t io, uint8_t *bw_bitmap, uint8_t *red_bitmap, size_t size) {
+static esp_err_t panel_epaper_set_vram(esp_lcd_panel_io_handle_t io, const uint8_t *bw_bitmap, const uint8_t *red_bitmap, size_t size) {
     ESP_LOGD(TAG, "panel_epaper_set_vram write red and black, size: %u", size);
     // Note: the screen region to be used to draw bitmap had been defined
     // The region of BLACK VRAM and RED VRAM are set by the same series of command, the two bitmaps will be drawn at
@@ -429,9 +429,9 @@ esp_lcd_new_panel_ssd1680(const esp_lcd_panel_io_handle_t io, const esp_lcd_pane
         ESP_RETURN_ON_FALSE(epaper_panel->_framebuffer, ESP_ERR_NO_MEM, TAG, "epaper_panel_init allocating buffer memory err");
     }
     size_t img_size = epaper_panel->height * epaper_panel->width / 8;
-    epaper_panel->_clearbuffer = heap_caps_malloc(img_size, MALLOC_CAP_DMA);
-    ESP_RETURN_ON_FALSE(epaper_panel->_clearbuffer, ESP_ERR_NO_MEM, TAG, "epaper_panel_init allocating buffer memory err");
-    memset(epaper_panel->_clearbuffer, 0xFF, img_size);
+    // epaper_panel->clearbuffer = epaper_ssd1680_conf->clear_img; // heap_caps_malloc(img_size, MALLOC_CAP_DMA);
+    // ESP_RETURN_ON_FALSE(epaper_panel->_clearbuffer, ESP_ERR_NO_MEM, TAG, "epaper_panel_init allocating buffer memory err");
+    // memset(epaper_panel->_clearbuffer, 0xFF, img_size);
     // --- Init GPIO
     // init RST GPIO
     if (epaper_panel->reset_gpio_num >= 0) {
@@ -489,7 +489,9 @@ static esp_err_t epaper_panel_del(esp_lcd_panel_t *panel) {
 }
 
 static esp_err_t epaper_panel_reset(esp_lcd_panel_t *panel) {
+#if CONFIG_LCD_ENABLE_DEBUG_LOG
     ESP_LOGI(TAG, "epaper_panel_reset");
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     esp_lcd_panel_io_handle_t io = epaper_panel->io;
 
@@ -599,8 +601,11 @@ static esp_err_t epaper_panel_init_stage_4(esp_lcd_panel_t *panel, uint8_t color
     // ESP_RETURN_ON_ERROR(epaper_set_lut(io, SSD1680_LUT_DEFAULT), TAG, "epaper_set_lut error");
     // ESP_RETURN_ON_ERROR(set_cursor(epaper_panel), TAG, "epaper_set_cursor() error");
     // clear screen
-        ESP_RETURN_ON_ERROR(panel_epaper_set_vram(epaper_panel->io, (uint8_t *)(epaper_panel->_clearbuffer), (epaper_panel->_clearbuffer), epaper_panel->_ram_params.buffer_size),
+    if (!(epaper_panel->_non_copy_mode)) {
+        memset(epaper_panel->_framebuffer, color, epaper_panel->_framebuffer_size);
+        ESP_RETURN_ON_ERROR(panel_epaper_set_vram(epaper_panel->io, (uint8_t *)(epaper_panel->_framebuffer), (epaper_panel->_framebuffer), epaper_panel->_framebuffer_size),
                             TAG, "panel_epaper_set_vram error");
+    }
     return ESP_OK;
 }
 
@@ -618,7 +623,9 @@ static esp_err_t epaper_panel_init_stage_5(esp_lcd_panel_t *panel) {
 }
 
 static esp_err_t epaper_panel_init(esp_lcd_panel_t *panel) {
+#if CONFIG_LCD_ENABLE_DEBUG_LOG
     ESP_LOGI(TAG, "epaper_panel_init");
+#endif
     // epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     // esp_lcd_panel_io_handle_t io = epaper_panel->io;
     ESP_RETURN_ON_ERROR(epaper_panel_init_stage_1(panel), TAG, "param epaper_panel_init_stage_1 err");

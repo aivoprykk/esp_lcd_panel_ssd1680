@@ -43,6 +43,7 @@ typedef struct {
     int16_t width;             /*!< Width of the e-paper panel */
     int16_t height;            /*!< Height of the e-paper panel */
     size_t buffer_size;        /*!< Size of the buffer used to store the bitmap */
+    //const unsigned char * clear_img; /*!< Data to be written to clear the screen */
 } esp_lcd_ssd1680_config_t;
 
 /**

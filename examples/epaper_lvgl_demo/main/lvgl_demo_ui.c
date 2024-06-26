@@ -24,8 +24,10 @@ static float voltage_bat = 0.0;
 
 static void update_bat(uint8_t verbose) {
     voltage_bat = volt_read();
+#if defined(DEBUG)
     if (verbose)
         ESP_LOGI(TAG, "[%s] Battery measured (computed:%.02f, required_min:%.02f)\n", __FUNCTION__, voltage_bat, MINIMUM_VOLTAGE);
+#endif
 }
 
 // static void set_value(void *indic, int32_t v) {
@@ -56,7 +58,9 @@ lv_main_screen_t *ui_main_screen = NULL;
 // }
 static bool button_down = false;
 static void button_cb(int num, l_button_ev_t ev) {
+#if defined(DEBUG)
     ESP_LOGI(TAG, "Button %d event: %d", num, ev);
+#endif
     l_button_t *btn = 0;
     if(num<1)
         btn = &btns[num];
@@ -103,7 +107,9 @@ float averageFloat(float *array, int count) {
 }
 
 lv_obj_t * splashScreenLoad() {
+#if defined(DEBUG)
     ESP_LOGI(TAG, "load splash screen");
+#endif
     lv_obj_t * splash = ui_common_panel_init(NULL, 100, 100);
     lv_obj_t *img = lv_img_create(splash);
     lv_obj_set_size(img, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
@@ -114,7 +120,9 @@ lv_obj_t * splashScreenLoad() {
 }
 
 lv_obj_t * blankScreenLoad(bool invert) {
+#if defined(DEBUG)
     ESP_LOGI(TAG, "load blank screen with color %s", invert ? "black" : "white");
+#endif
     lv_obj_t * panel = lv_obj_create(0);
     lv_obj_set_width(panel, lv_pct(100));
     lv_obj_set_height(panel, lv_pct(100));
@@ -127,7 +135,9 @@ lv_obj_t * blankScreenLoad(bool invert) {
 
 
 lv_obj_t * textScreenLoad(bool invert) {
+#if defined(DEBUG)
     ESP_LOGI(TAG, "load blank screen with color %s", invert ? "black" : "white");
+#endif
     lv_obj_t * panel = lv_obj_create(0);
     lv_obj_set_width(panel, lv_pct(100));
     lv_obj_set_height(panel, lv_pct(100));
@@ -135,7 +145,11 @@ lv_obj_t * textScreenLoad(bool invert) {
     lv_obj_clear_flag(panel, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);  /// Flags
     lv_obj_set_style_bg_color(panel, invert ? lv_color_black() : lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(panel, invert ? lv_color_white() : lv_color_black(), LV_PART_MAIN | LV_STATE_DEFAULT);
+    #if defined(USE_2BPP_FONT)
     lv_obj_set_style_text_font(panel, &ui_font_OpenSansBold28p2, LV_PART_MAIN | LV_STATE_DEFAULT);
+    #else
+    lv_obj_set_style_text_font(panel, &ui_font_OpenSansBold28p4, LV_PART_MAIN | LV_STATE_DEFAULT);
+    #endif
 
     lv_obj_t * upbox = ui_common_panel_init(panel, 100, 49);
     lv_obj_align(upbox, LV_ALIGN_TOP_MID, 0, 0);
@@ -212,14 +226,14 @@ static void timer_cb(lv_timer_t *timer) {
     // }
 
     else if(count < 7) {
-        showGpsScreen("GPS", "gps test", angle);
+        //ui_flush_screens(&ui_info_screen.screen);
+        showGpsScreen("GPS", "gps test", 0, angle);
         angle += 150;
         if(angle > 3500)
         angle = 0;
     }
     else if(count < 9){
-        if(ui_info_screen.screen.unload)
-            ui_info_screen.screen.unload();
+        //ui_flush_screens(&ui_speed_screen.screen);
         showSpeedScreen();
 #if defined(STATUS_PANEL_V1)
         ui_status_panel_t * statusbar = &ui_status_panel;
@@ -246,6 +260,7 @@ static void timer_cb(lv_timer_t *timer) {
     }
     
     else if(count < 11) {
+        //ui_flush_screens(&ui_stats_screen.screen);
         showStatsScreen12();
         f2_to_char(last_speed, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
@@ -253,6 +268,7 @@ static void timer_cb(lv_timer_t *timer) {
     }
 
     else if(count < 13) {
+        //ui_flush_screens(&ui_stats_screen.screen);
         showStatsScreen22();
         f2_to_char(last_speed, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
@@ -260,6 +276,7 @@ static void timer_cb(lv_timer_t *timer) {
     }
 
     else if(count < 15) {
+        //ui_flush_screens(&ui_stats_screen.screen);
         showStatsScreen32();
         f2_to_char(last_speed, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
@@ -268,8 +285,7 @@ static void timer_cb(lv_timer_t *timer) {
 
     else 
     if(count < 17) {
-        if(ui_stats_screen.screen.unload)
-            ui_stats_screen.screen.unload();
+        //ui_flush_screens(&ui_sleep_screen.screen);
         showSleepScreen();
 #if defined(STATUS_PANEL_V1)
         ui_status_panel_t * statusbar = &ui_status_panel;
@@ -288,10 +304,12 @@ static void timer_cb(lv_timer_t *timer) {
     }
     else 
     if(count < 19) {
+        //ui_flush_screens(&ui_init_screen.screen);
         showGpsTroubleScreen();
     }
     else 
     if(count < 21) {
+        //ui_flush_screens(&ui_info_screen.screen);
         showWifiScreen("majasa","10.0.0.1");
     }
     // else if (count < 24) {
@@ -406,8 +424,9 @@ void ui_demo(void) {
     btns[0].cb = button_cb;
     init_adc();
     ui_common_init();
+#if defined(DEBUG)
     ESP_LOGI(TAG, "create timer with 3,5sec interval");
-
+#endif
     lv_timer_t *timer = lv_timer_create(timer_cb, 4000, NULL);
     lv_timer_ready(timer);
 }

@@ -12,11 +12,11 @@ dependencies:
       type: local
     version: 0.1.0
   espressif/button:
-    component_hash: 16a2f5c573e5b6bac30565fdd4b20a155f24a4b438ae1a3cced89ea84ddce7ae
+    component_hash: e909337d12ca9e1148007c9e03bb0fdc43d1a7df8b2cf44a76458cc044001a96
     source:
       service_url: https://api.components.espressif.com/
       type: service
-    version: 3.2.1
+    version: 3.2.2
   espressif/cmake_utilities:
     component_hash: 351350613ceafba240b761b4ea991e0f231ac7a9f59a9ee901f751bddc0bb18f
     source:
@@ -27,7 +27,7 @@ dependencies:
     component_hash: null
     source:
       type: idf
-    version: 5.2.0
+    version: 5.2.2
   logger_adc:
     component_hash: null
     source:
