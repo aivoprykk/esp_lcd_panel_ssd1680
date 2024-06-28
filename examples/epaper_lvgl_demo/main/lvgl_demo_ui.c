@@ -36,20 +36,11 @@ static void update_bat(uint8_t verbose) {
 
 // #include "ui.h"
 // #include "ui_themes.h"
-#include "lv_comp_cell.h"
-#include "lv_comp_info_panel.h"
-#include "lv_comp_main_screen.h"
-#include "lv_comp_speed_panel.h"
-#include "lv_comp_stat_panel.h"
-#include "lv_comp_statusbar.h"
-#include "lv_comp_two_col_panel.h"
 #include "ui_common.h"
 
 static int count = 0, angle = 0;
 static float max_speed = 0, avg_speed = 0, cur_speed[5] = {0};
 static uint8_t index_speed = 0;
-
-lv_main_screen_t *ui_main_screen = NULL;
 
 // static void set_angle(void * img, int32_t v)
 // {
@@ -134,7 +125,7 @@ lv_obj_t * blankScreenLoad(bool invert) {
 }
 
 
-lv_obj_t * textScreenLoad(bool invert) {
+lv_obj_t * recordScreenLoad(bool invert) {
 #if defined(DEBUG)
     ESP_LOGI(TAG, "load blank screen with color %s", invert ? "black" : "white");
 #endif
@@ -210,11 +201,11 @@ static void timer_cb(lv_timer_t *timer) {
     // if (count == 0) {
     //     scr = splashScreenLoad();
     // }
-    // else if (count < 2) {
-    //     scr = textScreenLoad(false);
-    // }
-    else if (count < 3) {
+    else if (count < 2) {
         scr = blankScreenLoad(false);
+    }
+    else if (count < 3) {
+        scr = recordScreenLoad(false);
     }
     
     // else if(count < 3) {
@@ -225,15 +216,19 @@ static void timer_cb(lv_timer_t *timer) {
     //     showLowBatScreen();
     // }
 
-    else if(count < 7) {
-        //ui_flush_screens(&ui_info_screen.screen);
+    else if(count < 5) {
         showGpsScreen("GPS", "gps test", 0, angle);
         angle += 150;
         if(angle > 3500)
         angle = 0;
     }
+    else if(count < 7) {
+        loadStatsScreen(4,1);
+        f2_to_char(last_speed, p);
+        lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
+        lv_label_set_text(ui_stats_screen.cells[0][0].info, "AVG");
+    }
     else if(count < 9){
-        //ui_flush_screens(&ui_speed_screen.screen);
         showSpeedScreen();
 #if defined(STATUS_PANEL_V1)
         ui_status_panel_t * statusbar = &ui_status_panel;
@@ -260,15 +255,13 @@ static void timer_cb(lv_timer_t *timer) {
     }
     
     else if(count < 11) {
-        //ui_flush_screens(&ui_stats_screen.screen);
-        showStatsScreen12();
+        loadStatsScreen(3,1);
         f2_to_char(last_speed, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].info, "500M");
     }
 
     else if(count < 13) {
-        //ui_flush_screens(&ui_stats_screen.screen);
         showStatsScreen22();
         f2_to_char(last_speed, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
@@ -276,7 +269,6 @@ static void timer_cb(lv_timer_t *timer) {
     }
 
     else if(count < 15) {
-        //ui_flush_screens(&ui_stats_screen.screen);
         showStatsScreen32();
         f2_to_char(last_speed, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
@@ -285,7 +277,6 @@ static void timer_cb(lv_timer_t *timer) {
 
     else 
     if(count < 17) {
-        //ui_flush_screens(&ui_sleep_screen.screen);
         showSleepScreen();
 #if defined(STATUS_PANEL_V1)
         ui_status_panel_t * statusbar = &ui_status_panel;
@@ -304,112 +295,12 @@ static void timer_cb(lv_timer_t *timer) {
     }
     else 
     if(count < 19) {
-        //ui_flush_screens(&ui_init_screen.screen);
         showGpsTroubleScreen();
     }
     else 
     if(count < 21) {
-        //ui_flush_screens(&ui_info_screen.screen);
         showWifiScreen("majasa","10.0.0.1");
     }
-    // else if (count < 24) {
-    //     mainScereenLoad();
-    //     panel = ui_main_screen->panel_info;
-    //     if (_lvgl_lock(-1)) {
-    //         lv_main_screen_show_panel(ui_main_screen, LV_MAIN_SCREEN_PANEL_BOOT);
-    //         // lv_obj_report_style_change(0);
-    //         // lv_obj_update_layout(panel);
-    //         _lvgl_unlock();
-    //     }
-    // } else if (count < 27) {
-    //     ESP_LOGI(TAG, "l < 10");
-    //     panel = ui_main_screen->panel_info;
-    //     if (_lvgl_lock(-1)) {
-    //         lv_main_screen_show_panel(ui_main_screen, LV_MAIN_SCREEN_PANEL_INFO);
-    //         lv_statusbar_set_bat(ui_main_screen->statusbar, "90%");
-    //         f2_to_char(last_speed, p);
-    //         lv_info_panel_set_title(panel, p);
-    //         // lv_obj_report_style_change(0);
-    //         // lv_obj_update_layout(panel);
-    //         _lvgl_unlock();
-    //     }
-    //     //     lv_disp_load_scr( ui_InfoScreen);
-    //     //     lv_obj_clear_flag( ui_InfoInitPanel, LV_OBJ_FLAG_HIDDEN );
-    //     //     //delay_ms(1500);
-    // } else if (count < 30) {
-    //     ESP_LOGI(TAG, "l < 15");
-    //     panel = ui_main_screen->panel_stat;
-    //     if (_lvgl_lock(-1)) {
-    //         lv_main_screen_show_panel(ui_main_screen, LV_MAIN_SCREEN_PANEL_STAT);
-    //         lv_stat_panel_setup_mode(panel, 0);
-    //         f2_to_char(last_speed, p);
-    //         lv_cell_set_data(((lv_stat_panel_t *)panel)->row_panels[0], p, "10SEC");
-    //         f2_to_char(max_speed, p);
-    //         lv_two_col_panel_set_left_data(((lv_stat_panel_t *)panel)->row_panels[1], p, "MAX");
-    //         f2_to_char(avg_speed, p);
-    //         lv_two_col_panel_set_right_data(((lv_stat_panel_t *)panel)->row_panels[1], p, "AVG");
-    //         // lv_obj_report_style_change(0);
-    //         // lv_obj_update_layout(panel);
-    //         _lvgl_unlock();
-    //     }
-    //     //     lv_obj_add_flag( ui_InfoInitPanel, LV_OBJ_FLAG_HIDDEN );
-    //     //         angle += 150;
-    //     //     if(angle > 35000)
-    //     //         angle = 0;
-    //     //     set_angle(ui_MainImage, angle);
-    // } else if (count < 33) {
-    //     ESP_LOGI(TAG, "l < 20");
-    //     panel = ui_main_screen->panel_stat;
-    //     if (_lvgl_lock(-1)) {
-    //         lv_main_screen_show_panel(ui_main_screen, LV_MAIN_SCREEN_PANEL_STAT);
-    //         lv_stat_panel_setup_mode(panel, 1);
-    //         // lv_obj_report_style_change(0);
-    //         // lv_obj_update_layout(panel);
-    //         _lvgl_unlock();
-    //     }
-    // } else if (count < 36) {
-    //     ESP_LOGI(TAG, "l < 25");
-    //     panel = ui_main_screen->panel_stat;
-    //     if (_lvgl_lock(-1)) {
-    //         lv_main_screen_show_panel(ui_main_screen, LV_MAIN_SCREEN_PANEL_STAT);
-    //         lv_stat_panel_setup_mode(panel, 2);
-    //         // lv_obj_report_style_change(0);
-    //         // lv_obj_update_layout(panel);
-    //         _lvgl_unlock();
-    //     }
-    // } else if (count < 39) {
-    //     ESP_LOGI(TAG, "l < 30");
-    //     panel = ui_main_screen->panel_stat;
-    //     if (_lvgl_lock(-1)) {
-    //         lv_main_screen_show_panel(ui_main_screen, LV_MAIN_SCREEN_PANEL_STAT);
-    //         lv_stat_panel_setup_mode(panel, 3);
-    //         // lv_obj_report_style_change(0);
-    //         // lv_obj_update_layout(panel);
-    //         _lvgl_unlock();
-    //     }
-    // } else if (count < 342) {
-    //     ESP_LOGI(TAG, "l < 35");
-    //     panel = ui_main_screen->panel_speed;
-    //     if (_lvgl_lock(-1)) {
-    //         lv_main_screen_show_panel(ui_main_screen, LV_MAIN_SCREEN_PANEL_SPEED);
-    //         f2_to_char(last_speed, p);
-    //         lv_cell_set_data(((lv_speed_panel_t *)panel)->main_panel, p, "km/h");
-    //         f2_to_char(max_speed, p);
-    //         lv_two_col_panel_set_left_data((((lv_speed_panel_t *)panel)->secondary_panel), p, "MAX");
-    //         f2_to_char(avg_speed, p);
-    //         lv_two_col_panel_set_right_data((((lv_speed_panel_t *)panel)->secondary_panel), p, "MAX");
-
-    //         // lv_obj_report_style_change(0);
-    //         // lv_obj_update_layout(panel);
-    //         _lvgl_unlock();
-    //     }
-        //     lv_obj_add_flag( ui_InfoInitPanel, LV_OBJ_FLAG_HIDDEN );
-        //         angle += 150;
-        //     if(angle > 35000)
-        //         angle = 0;
-        //     set_angle(ui_MainImage, angle);
-    // }
-// end:
    if(lscr) {
         if(lscr==scr)
             scr = 0;
