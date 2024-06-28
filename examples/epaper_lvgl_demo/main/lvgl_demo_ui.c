@@ -125,38 +125,43 @@ lv_obj_t * blankScreenLoad(bool invert) {
 }
 
 
-lv_obj_t * recordScreenLoad(bool invert) {
-#if defined(DEBUG)
-    ESP_LOGI(TAG, "load blank screen with color %s", invert ? "black" : "white");
-#endif
-    lv_obj_t * panel = lv_obj_create(0);
-    lv_obj_set_width(panel, lv_pct(100));
-    lv_obj_set_height(panel, lv_pct(100));
-    lv_obj_set_style_radius(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_clear_flag(panel, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);  /// Flags
-    lv_obj_set_style_bg_color(panel, invert ? lv_color_black() : lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(panel, invert ? lv_color_white() : lv_color_black(), LV_PART_MAIN | LV_STATE_DEFAULT);
-    #if defined(USE_2BPP_FONT)
-    lv_obj_set_style_text_font(panel, &ui_font_OpenSansBold28p2, LV_PART_MAIN | LV_STATE_DEFAULT);
-    #else
-    lv_obj_set_style_text_font(panel, &ui_font_OpenSansBold28p4, LV_PART_MAIN | LV_STATE_DEFAULT);
-    #endif
+// lv_obj_t * recordScreenLoad(bool invert) {
+// #if defined(DEBUG)
+//     ESP_LOGI(TAG, "load blank screen with color %s", invert ? "black" : "white");
+// #endif
+//     lv_obj_t * panel = lv_obj_create(0);
+//     lv_obj_set_width(panel, lv_pct(100));
+//     lv_obj_set_height(panel, lv_pct(100));
+//     lv_obj_set_style_radius(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+//     lv_obj_clear_flag(panel, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);  /// Flags
+//     lv_obj_set_style_bg_color(panel, invert ? lv_color_black() : lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
+//     lv_obj_set_style_text_color(panel, invert ? lv_color_white() : lv_color_black(), LV_PART_MAIN | LV_STATE_DEFAULT);
+//     #if defined(USE_2BPP_FONT)
+//     lv_obj_set_style_text_font(panel, &ui_font_OpenSansBold28p2, LV_PART_MAIN | LV_STATE_DEFAULT);
+//     #else
+//     lv_obj_set_style_text_font(panel, &ui_font_OpenSansBold28p4, LV_PART_MAIN | LV_STATE_DEFAULT);
+//     #endif
 
-    lv_obj_t * upbox = ui_common_panel_init(panel, 100, 49);
-    lv_obj_align(upbox, LV_ALIGN_TOP_MID, 0, 0);
-    lv_obj_t *label = lv_label_create(upbox);
-    lv_label_set_text(label, "109.05");
-    lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, lv_pct(0));
+//     lv_obj_t *label;
+//     label = lv_label_create(panel);
+//     lv_label_set_text(label, "10sec");
+//     lv_obj_align(label, LV_ALIGN_CENTER, lv_pct(-30), lv_pct(-2));
+//     #if defined(USE_2BPP_FONT)
+//     lv_obj_set_style_text_font(label, &ui_font_OswaldRegular20p2, LV_PART_MAIN | LV_STATE_DEFAULT);
+//     #else
+//     lv_obj_set_style_text_font(label, &ui_font_OswaldRegular20p4, LV_PART_MAIN | LV_STATE_DEFAULT);
+//     #endif
+//     label = lv_label_create(panel);
+//     lv_label_set_text(label, "109.05");
+//     lv_obj_align(label, LV_ALIGN_CENTER, 0, lv_pct(-12));
 
-    lv_obj_t * lowbox = ui_common_panel_init(panel, 100, 49);
-    lv_obj_align(lowbox, LV_ALIGN_BOTTOM_MID, 0, 0);
-    label = lv_label_create(lowbox);
-    lv_label_set_text(label, "105.72");
-    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, lv_pct(10));
+//     label = lv_label_create(panel);
+//     lv_label_set_text(label, "105.72");
+//     lv_obj_align(label, LV_ALIGN_CENTER, 0, lv_pct(12));
 
-    lv_scr_load(panel);
-    return panel; 
-}
+//     lv_scr_load(panel);
+//     return panel; 
+// }
 
 
 typedef struct sleep_scr_s {
@@ -205,7 +210,7 @@ static void timer_cb(lv_timer_t *timer) {
         scr = blankScreenLoad(false);
     }
     else if (count < 3) {
-        scr = recordScreenLoad(false);
+        loadRecordScreen(false);
     }
     
     // else if(count < 3) {
