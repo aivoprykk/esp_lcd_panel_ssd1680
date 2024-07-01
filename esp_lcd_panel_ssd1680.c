@@ -22,7 +22,7 @@
 #include "esp_lcd_ssd1680_commands.h"
 #include "esp_log.h"
 #include "esp_memory_utils.h"
-#include "logger_common.h"
+//#include "logger_common.h"
 
 #define SSD1680_LUT_SIZE 159
 #define SSD1680_SOURCE_SIZE 176

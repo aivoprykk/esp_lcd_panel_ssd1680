@@ -124,46 +124,6 @@ lv_obj_t * blankScreenLoad(bool invert) {
     return panel;
 }
 
-
-// lv_obj_t * recordScreenLoad(bool invert) {
-// #if defined(DEBUG)
-//     ESP_LOGI(TAG, "load blank screen with color %s", invert ? "black" : "white");
-// #endif
-//     lv_obj_t * panel = lv_obj_create(0);
-//     lv_obj_set_width(panel, lv_pct(100));
-//     lv_obj_set_height(panel, lv_pct(100));
-//     lv_obj_set_style_radius(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-//     lv_obj_clear_flag(panel, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);  /// Flags
-//     lv_obj_set_style_bg_color(panel, invert ? lv_color_black() : lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
-//     lv_obj_set_style_text_color(panel, invert ? lv_color_white() : lv_color_black(), LV_PART_MAIN | LV_STATE_DEFAULT);
-//     #if defined(USE_2BPP_FONT)
-//     lv_obj_set_style_text_font(panel, &ui_font_OpenSansBold28p2, LV_PART_MAIN | LV_STATE_DEFAULT);
-//     #else
-//     lv_obj_set_style_text_font(panel, &ui_font_OpenSansBold28p4, LV_PART_MAIN | LV_STATE_DEFAULT);
-//     #endif
-
-//     lv_obj_t *label;
-//     label = lv_label_create(panel);
-//     lv_label_set_text(label, "10sec");
-//     lv_obj_align(label, LV_ALIGN_CENTER, lv_pct(-30), lv_pct(-2));
-//     #if defined(USE_2BPP_FONT)
-//     lv_obj_set_style_text_font(label, &ui_font_OswaldRegular20p2, LV_PART_MAIN | LV_STATE_DEFAULT);
-//     #else
-//     lv_obj_set_style_text_font(label, &ui_font_OswaldRegular20p4, LV_PART_MAIN | LV_STATE_DEFAULT);
-//     #endif
-//     label = lv_label_create(panel);
-//     lv_label_set_text(label, "109.05");
-//     lv_obj_align(label, LV_ALIGN_CENTER, 0, lv_pct(-12));
-
-//     label = lv_label_create(panel);
-//     lv_label_set_text(label, "105.72");
-//     lv_obj_align(label, LV_ALIGN_CENTER, 0, lv_pct(12));
-
-//     lv_scr_load(panel);
-//     return panel; 
-// }
-
-
 typedef struct sleep_scr_s {
     float data;
     const char *info;
@@ -203,43 +163,49 @@ static void timer_cb(lv_timer_t *timer) {
     lv_obj_t * lscr = scr;
     if(button_down)
         return;
-    // if (count == 0) {
-    //     scr = splashScreenLoad();
-    // }
-    else if (count < 2) {
+    else if (count == 0) {
         scr = blankScreenLoad(false);
     }
-    else if (count < 3) {
+    if(count == 1) {
+        showSleepScreen();
+        ui_status_panel_t * statusbar = &ui_status_panel;
+        lv_label_set_text(statusbar->time_label, "12:00 2024-01-01");
+        lv_label_set_text(statusbar->bat_label, "97%");
+        for(int i = 0; i < 6; i++) {
+            for(int j = 0; j < 2; j++) {
+                f2_to_char(sleep_scr_info_fields[j][i].data, p);
+                lv_label_set_text(ui_sleep_screen.cells[i][j].title, p);
+                lv_label_set_text(ui_sleep_screen.cells[i][j].info, sleep_scr_info_fields[j][i].info);
+            }
+        }
+    }
+    else if (count <= 2) {
         loadRecordScreen(false);
     }
     
-    // else if(count < 3) {
-    //     showBootScreen("Booting");
-    // }
+    else if(count == 3) {
+         showBootScreen("Booting");
+    }
 
-    // else if(count < 5) {
-    //     showLowBatScreen();
-    // }
+    else if(count == 4) {
+         showLowBatScreen();
+    }
 
-    else if(count < 5) {
+    else if(count == 5) {
         showGpsScreen("GPS", "gps test", 0, angle);
         angle += 150;
         if(angle > 3500)
         angle = 0;
     }
-    else if(count < 7) {
+    else if(count == 6) {
         loadStatsScreen(4,1);
         f2_to_char(last_speed, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].info, "AVG");
     }
-    else if(count < 9){
+    else if(count == 7){
         showSpeedScreen();
-#if defined(STATUS_PANEL_V1)
         ui_status_panel_t * statusbar = &ui_status_panel;
-#else
-    lv_statusbar_t * statusbar = (lv_statusbar_t *)ui_StatusPanel;
-#endif
         f2_to_char(voltage_bat, p);
         lv_label_set_text(statusbar->bat_label, p);
         if(count % 3 == 0) {
@@ -259,60 +225,42 @@ static void timer_cb(lv_timer_t *timer) {
         }
     }
     
-    else if(count < 11) {
+    else if(count == 8) {
         loadStatsScreen(3,1);
         f2_to_char(last_speed, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].info, "500M");
     }
 
-    else if(count < 13) {
+    else if(count == 9) {
         showStatsScreen22();
         f2_to_char(last_speed, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].info, "MILE");
     }
 
-    else if(count < 15) {
+    else if(count == 10) {
         showStatsScreen32();
         f2_to_char(last_speed, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].info, "AVG");
     }
 
-    else 
-    if(count < 17) {
-        showSleepScreen();
-#if defined(STATUS_PANEL_V1)
-        ui_status_panel_t * statusbar = &ui_status_panel;
-#else
-    lv_statusbar_t * statusbar = (lv_statusbar_t *)ui_StatusPanel;
-#endif
-        lv_label_set_text(statusbar->time_label, "12:00 2024-01-01");
-        lv_label_set_text(statusbar->bat_label, "97%");
-        for(int i = 0; i < 6; i++) {
-            for(int j = 0; j < 2; j++) {
-                f2_to_char(sleep_scr_info_fields[j][i].data, p);
-                lv_label_set_text(ui_sleep_screen.cells[i][j].title, p);
-                lv_label_set_text(ui_sleep_screen.cells[i][j].info, sleep_scr_info_fields[j][i].info);
-            }
-        }
-    }
-    else 
-    if(count < 19) {
+    else if(count == 11) {
         showGpsTroubleScreen();
     }
-    else 
-    if(count < 21) {
+    else if(count == 12) {
         showWifiScreen("majasa","10.0.0.1");
     }
+
    if(lscr) {
         if(lscr==scr)
             scr = 0;
         lv_obj_del(lscr);
     }
-    if (count++ >= 21)
-        count = 1;
+
+    if (count++ >= 12)
+        count = 0;
 }
 
 void ui_demo(void) {
@@ -323,6 +271,6 @@ void ui_demo(void) {
 #if defined(DEBUG)
     ESP_LOGI(TAG, "create timer with 3,5sec interval");
 #endif
-    lv_timer_t *timer = lv_timer_create(timer_cb, 4000, NULL);
+    lv_timer_t *timer = lv_timer_create(timer_cb, 000, NULL);
     lv_timer_ready(timer);
 }
