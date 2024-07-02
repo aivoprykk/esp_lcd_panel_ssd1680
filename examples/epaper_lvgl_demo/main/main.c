@@ -98,7 +98,7 @@ IRAM_ATTR bool epaper_flush_ready_callback(const esp_lcd_panel_handle_t handle, 
     return false;
 }
 
-static uint8_t fast_refresh_lut[] = SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_KEEP;
+static const uint8_t fast_refresh_lut[] = SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_KEEP_1;
 static uint32_t update_count = 0;
 static uint8_t *converted_buffer_black;
 // static uint8_t *converted_buffer_red;
@@ -142,13 +142,14 @@ static void example_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_
         ESP_LOGI(TAG, "Resetting e-Paper display...");
         ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
         delay_ms(100);
-        ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
+        //ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
+        ESP_ERROR_CHECK(epaper_panel_init_screen_ssd1680(panel_handle, INIT_MODE_FULL_2, 0));
         delay_ms(100);
     }
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
     if(update_count!=0 && update_count!=1000) {
         ESP_LOGI(TAG, "Refreshing e-Paper display...");
-        ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd1680(panel_handle, fast_refresh_lut, 159));
+        ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd1680(panel_handle, fast_refresh_lut, PARTIAL_UPDATE_LUT_SIZE));
     }
 
     int offsetx1 = area->x1;
@@ -194,7 +195,7 @@ static void example_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_
     ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, offsetx1, offsety1, offsetx2 + 1, offsety2 + 1, converted_buffer_black));
     ESP_ERROR_CHECK(epaper_panel_refresh_screen_ssd1680(panel_handle, 0));
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, false));
-    if(update_count++>=100) 
+    if(update_count++>=25) 
         update_count=0;
     
     lv_disp_flush_ready(drv);

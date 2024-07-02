@@ -271,6 +271,6 @@ void ui_demo(void) {
 #if defined(DEBUG)
     ESP_LOGI(TAG, "create timer with 3,5sec interval");
 #endif
-    lv_timer_t *timer = lv_timer_create(timer_cb, 000, NULL);
+    lv_timer_t *timer = lv_timer_create(timer_cb, 1000, NULL);
     lv_timer_ready(timer);
 }

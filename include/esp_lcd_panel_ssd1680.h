@@ -132,7 +132,7 @@ esp_err_t epaper_panel_register_event_callbacks_ssd1680(esp_lcd_panel_t *panel, 
  * @return  ESP_OK                on success
  *          ESP_ERR_INVALID_ARG   if parameter is invalid
  */
-esp_err_t epaper_panel_set_custom_lut_ssd1680(esp_lcd_panel_t *panel, uint8_t *lut, size_t size);
+esp_err_t epaper_panel_set_custom_lut_ssd1680(esp_lcd_panel_t *panel, const uint8_t *lut, size_t size);
 
 uint8_t is_xy_swapped(esp_lcd_panel_t *panel);
 uint8_t is_mirrored(esp_lcd_panel_t *panel);
@@ -141,11 +141,13 @@ esp_err_t epaper_panel_clear_screen_ssd1680(esp_lcd_panel_t *panel, uint8_t * co
 
 typedef enum {
     INIT_MODE_PARTIAL = 0x00,
-    INIT_MODE_FULL = 0x01,
-    INIT_MODE_FAST = 0x02,
+    INIT_MODE_FAST_1 = 0xc7,
+    INIT_MODE_FAST_2 = 0xcf,
+    INIT_MODE_FULL_1 = 0xf7,
+    INIT_MODE_FULL_2 = 0xff,
 } epaper_panel_init_mode_t;
 
-esp_err_t epaper_panel_init_screen_ssd1680(esp_lcd_panel_t *panel,  epaper_panel_init_mode_t next_init_mode);
+esp_err_t epaper_panel_init_screen_ssd1680(esp_lcd_panel_t *panel, epaper_panel_init_mode_t next_init_mode, const uint8_t *lut);
 esp_err_t epaper_panel_set_next_init_mode_ssd1680(esp_lcd_panel_t *panel, epaper_panel_init_mode_t next_init_mode);
 
 typedef enum {

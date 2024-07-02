@@ -14,7 +14,7 @@
 #define SSD1680_CMD_SWRST                   0x12
 // --- Driver output control
 #define SSD1680_CMD_OUTPUT_CTRL             0x01
-#define SSD1680_PARAM_OUTPUT_CTRL           ((uint8_t[]) {0x00, 0x01, 0x00}) // 100000000 = 01 00 = 256 gates used of 296
+#define SSD1680_PARAM_OUTPUT_CTRL           ((const uint8_t[]) {0x00, 0x01, 0x00}) // 100000000 = 01 00 = 256 gates used of 296
 // --- Data Entry Sequence Setting
 #define SSD1680_CMD_DATA_ENTRY_MODE         0x11
 // A [1:0] = ID[1:0], A[2] = AM
@@ -53,18 +53,26 @@
 #define SSD1680_PARAM_TEMP_SENSOR           0x80
 // --- Display Update Control 2
 #define SSD1680_CMD_SET_DISP_UPDATE_CTRL    0x22
-// Load temperature value
-// Load LUT with DISPLAY mode 1
-// Disable clock signal
-#define SSD1680_PARAM_DISP_UPDATE_MODE_1      0xf7
 // Enable clock signal
 // Enable Analog
+// -- >>
+// Load LUT with DISPLAY mode 1
+// Disable clock signal
+// Disable OSC
+#define SSD1680_PARAM_DISP_UPDATE_MODE_3    0xc7
+// Like prev but:
 // Display with DISPLAY Mode 2
+#define SSD1680_PARAM_DISP_UPDATE_MODE_2    0xcf
+// Enable clock signal
+// Enable Analog
+// Load temperature value -- >>
+// Display with DISPLAY Mode 1
 // Disable Analog
 // Disable OSC
-#define SSD1680_PARAM_DISP_UPDATE_MODE_2      0xcf
-// Display with DISPLAY Mode 3
-#define SSD1680_PARAM_DISP_UPDATE_MODE_3        0xc0
+#define SSD1680_PARAM_DISP_UPDATE_MODE_1    0xf7
+// (Default) Like prev but:
+// Display with DISPLAY Mode 2
+#define SSD1680_PARAM_DISP_UPDATE_MODE_0    0xff
 // --- Active display update sequence
 #define SSD1680_CMD_ACTIVE_DISP_UPDATE_SEQ  0x20
 // ---
@@ -91,7 +99,7 @@
 #define SSD1680_PARAM_GATE_DRIVING_VOLTAGE  0x17
 // Source driving voltage
 #define SSD1680_CMD_SET_SRC_DRIVING_VOLTAGE 0x04
-#define SSD1680_PARAM_SRC_DRIVING_VOLTAGE   ((uint8_t[]) {0x41, 0x00, 0x32})
+#define SSD1680_PARAM_SRC_DRIVING_VOLTAGE   ((const uint8_t[]) {0x41, 0x00, 0x32})
 // Write VCOM Register
 #define SSD1680_CMD_SET_VCOM_REG            0x2c
 // -0.8V
