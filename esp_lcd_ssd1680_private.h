@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 
-#if (defined(DEBUG) || defined(LCD_ENABLE_DEBUG_LOG))
+#if (defined(LCD_ENABLE_DEBUG_LOG))
 #include "esp_timer.h"
 #define DEBUG_LOG(a, b, ...) ESP_LOGI(a, b, __VA_ARGS__)
 #define DEBUG_MEAS_START() uint64_t _start = (esp_timer_get_time()), _end = 0

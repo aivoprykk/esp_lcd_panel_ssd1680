@@ -56,7 +56,7 @@
 #define WAIT_TIME_MS 5000
 
 static const char *TAG = "epaper_demo_plain";
-static SemaphoreHandle_t epaper_panel_semaphore;
+static SemaphoreHandle_t epaper_panel_semaphore = 0;
 static uint8_t fast_refresh_lut[] = SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_KEEP;
 TIMER_INIT
 
