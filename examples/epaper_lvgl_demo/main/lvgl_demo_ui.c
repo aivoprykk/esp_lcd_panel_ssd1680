@@ -127,7 +127,8 @@ lv_obj_t * blankScreenLoad(bool invert) {
 typedef struct sleep_scr_s {
     float data;
     const char *info;
-};
+} sleep_scr_t;
+
 static struct sleep_scr_s sleep_scr_info_fields[2][6] = {
     {
         {100.49, "AV:"},
@@ -180,7 +181,7 @@ static void timer_cb(lv_timer_t *timer) {
         }
     }
     else if (count <= 2) {
-        loadRecordScreen(false);
+        showRecordScreen();
     }
     
     else if(count == 3) {

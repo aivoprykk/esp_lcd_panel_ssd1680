@@ -74,7 +74,6 @@ static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) calle
 static lv_disp_drv_t disp_drv;      // contains callback functions
 
 bool _lvgl_lock(int timeout_ms) {
-    // LOGR
     // Convert timeout in milliseconds to FreeRTOS ticks
     // If `timeout_ms` is set to -1, the program will block until the condition is met
     const TickType_t timeout_ticks = (timeout_ms == -1) ? portMAX_DELAY : pdMS_TO_TICKS(timeout_ms);
@@ -82,7 +81,6 @@ bool _lvgl_lock(int timeout_ms) {
 }
 
 void _lvgl_unlock(void) {
-    // LOGR
     xSemaphoreGive(panel_refreshing_sem);
 }
 

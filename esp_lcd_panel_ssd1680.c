@@ -253,6 +253,12 @@ static esp_err_t epaper_set_cursor(esp_lcd_panel_io_handle_t io, uint8_t cur_x, 
     return ESP_OK;
 }
 
+static esp_err_t epaper_panel_set_sleep_ctrl(esp_lcd_panel_io_handle_t io, uint8_t sleep_mode) {
+    DEBUG_LOG(TAG, "[%s]", __func__);
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, SSD1680_CMD_SLEEP_CTRL, (const uint8_t[]){sleep_mode}, 1), TAG, "SSD1680_CMD_SLEEP_CTRL err");
+    return ESP_OK;
+}
+
 #define DEPG0213B74 1
 // #define GDEQ0213B74 1
 
@@ -664,7 +670,7 @@ static esp_err_t epaper_panel_init_stage_2(esp_lcd_panel_t *panel) {
     DEBUG_LOG(TAG, "[%s]", __func__);
     DEBUG_MEAS_START();
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
-    set_ram_params(epaper_panel, 0, 0, epaper_panel->width, epaper_panel->height, 0x03, false);
+    set_ram_params(epaper_panel, 0, 0, epaper_panel->width, epaper_panel->height, 0x03, false); // default
     // --- Set RAM data entry mode
     ESP_RETURN_ON_ERROR(epaper_set_data_entry_sequence(panel, true), TAG, "epaper_set_data_entry_sequence error");
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
@@ -879,7 +885,7 @@ static esp_err_t epaper_panel_disp_on_off(esp_lcd_panel_t *panel, bool on_off) {
     esp_lcd_panel_io_handle_t io = epaper_panel->io;
     if (on_off) {
         // Turn on display
-        ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_SET_DISP_UPDATE_CTRL, (const uint8_t[]){0xc7}, 1), TAG, "SSD1680_CMD_SET_DISP_UPDATE_CTRL err");
+        ESP_RETURN_ON_ERROR(epaper_set_display_sequence(io, 0xc7), TAG, "epaper_set_display_sequence err");
         ESP_RETURN_ON_ERROR(epaper_set_active_display_update_sequence(io), TAG, "epaper_set_active_display_update_sequence err");
         panel_epaper_wait_busy(panel);
     } else {
@@ -892,7 +898,7 @@ static esp_err_t epaper_panel_disp_on_off(esp_lcd_panel_t *panel, bool on_off) {
         }
         // Sleep mode, BUSY pin will keep HIGH after entering sleep mode
         // Perform reset and re-run init to resume the display
-        ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_SLEEP_CTRL, (const uint8_t[]){sleep_mode}, 1), TAG, "SSD1680_CMD_SLEEP_CTRL err");
+        ESP_RETURN_ON_ERROR(epaper_panel_set_sleep_ctrl(io, sleep_mode), TAG, "epaper_panel_set_sleep_ctrl err");
         // BUSY pin will stay HIGH, so do not call panel_epaper_wait_busy() here
         epaper_panel->next_sleep_mode=SLEEP_MODE_DEEP_1;
     }
