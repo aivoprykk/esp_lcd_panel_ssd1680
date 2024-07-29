@@ -29,102 +29,7 @@
 #define SSD1680_GATE_SIZE 296
 #define SSD1680_RAM_SIZE (SSD1680_SOURCE_SIZE * SSD1680_GATE_SIZE / 8)  // 6512
 
-#ifndef min
-#define min(a, b) (((a) < (b)) ? (a) : (b))
-#endif
-
-#ifndef SWAP_INT
-#define SWAP_INT(a, b) \
-    {                  \
-        int t = a;     \
-        a = b;         \
-        b = t;         \
-    }
-#endif
-
 static const char *TAG = "lcd_panel.epaper";
-
-typedef struct ram_params_s {
-    int16_t x;
-    // int16_t dx;
-    // int16_t dxe;
-    int16_t y;
-    // int16_t dy;
-    // int16_t dye;
-    int16_t xe;
-    //int16_t xe_orig;
-    int16_t ye;
-    //int16_t ye_orig;
-    int16_t w;
-    //int16_t wb;
-    int16_t h;
-    uint8_t xs_d8;
-    uint8_t xe_d8;
-    uint8_t ys_m256;
-    uint8_t ys_d256;
-    uint8_t ye_m256;
-    uint8_t ye_d256;
-    size_t buffer_size;
-    uint8_t ram_mode;
-} ram_params_t;
-
-typedef struct {
-    esp_lcd_epaper_panel_cb_t callback_ptr;
-    void *args;
-} epaper_panel_callback_t;
-
-typedef struct {
-    esp_lcd_panel_t base;
-    esp_lcd_panel_io_handle_t io;
-    // --- Normal configurations
-    // Configurations from panel_dev_config
-    int reset_gpio_num;
-    bool reset_level;
-    // Configurations from epaper_ssd1680_conf
-    int busy_gpio_num;
-    bool full_refresh;
-    // Configurations from interface functions
-    int gap_x;
-    int gap_y;
-    // Configurations from e-Paper specific public functions
-    epaper_panel_callback_t epaper_refresh_done_isr_callback;
-    esp_lcd_ssd1680_bitmap_color_t bitmap_color;
-    // --- Associated configurations
-    // SHOULD NOT modify directly
-    // in order to avoid going into undefined state
-    bool _non_copy_mode;
-    bool _mirror_y;
-    bool _swap_xy;
-    // --- Other private fields
-    bool _mirror_x;
-    bool _invert_color;
-    bool _is_rotation_done;
-    ram_params_t _ram_params;
-    int16_t width;
-    int16_t height;
-    //const uint8_t *clearbuffer;
-    uint8_t *_framebuffer;
-    size_t _framebuffer_size;
-    epaper_panel_init_mode_t next_init_mode;
-    epaper_panel_sleep_mode_t next_sleep_mode;
-    const uint8_t * next_init_lut;
-} epaper_panel_t;
-
-static esp_err_t process_bitmap(esp_lcd_panel_t *panel, const void *color_data);
-static void epaper_driver_gpio_isr_handler(void *arg);
-static esp_err_t epaper_set_lut(esp_lcd_panel_io_handle_t io, const uint8_t *lut);
-static esp_err_t epaper_panel_del(esp_lcd_panel_t *panel);
-static esp_err_t epaper_panel_reset(esp_lcd_panel_t *panel);
-static esp_err_t epaper_panel_init(esp_lcd_panel_t *panel);
-static esp_err_t epaper_panel_draw_bitmap(esp_lcd_panel_t *panel, int x_start, int y_start, int x_end, int y_end, const void *color_data);
-static esp_err_t epaper_panel_invert_color(esp_lcd_panel_t *panel, bool invert_color_data);
-static esp_err_t epaper_panel_mirror(esp_lcd_panel_t *panel, bool mirror_x, bool mirror_y);
-static esp_err_t epaper_panel_swap_xy(esp_lcd_panel_t *panel, bool swap_axes);
-static esp_err_t epaper_panel_set_gap(esp_lcd_panel_t *panel, int x_gap, int y_gap);
-static esp_err_t epaper_panel_disp_on_off(esp_lcd_panel_t *panel, bool on_off);
-
-void rotate_bitmap(unsigned char *src, unsigned char *dest, int width, int height, unsigned char rotation);
-void rotate(uint8_t *bitmap, uint8_t *framebuffer, int width, int height, uint16_t rotation);
 
 static esp_err_t set_ram_params(epaper_panel_t *epaper_panel, int x, int y, int xe, int ye, uint8_t em, bool swap_xy) {
     ram_params_t *p = &(epaper_panel->_ram_params);
@@ -654,6 +559,20 @@ esp_err_t epaper_panel_set_bitmap_color_ssd1680(esp_lcd_panel_t *panel, esp_lcd_
     return ESP_OK;
 }
 
+esp_err_t epaper_panel_set_next_init_mode_ssd1680(esp_lcd_panel_t *panel, epaper_panel_init_mode_t next_init_mode) {
+    DEBUG_LOG(TAG, "[%s]", __func__);
+    epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
+    epaper_panel->next_init_mode = next_init_mode;
+    return ESP_OK;
+}
+
+esp_err_t epaper_panel_set_next_sleep_mode_ssd1680(esp_lcd_panel_t *panel, epaper_panel_sleep_mode_t next_sleep_mode) {
+    DEBUG_LOG(TAG, "[%s]", __func__);
+    epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
+    epaper_panel->next_sleep_mode = next_sleep_mode;
+    return ESP_OK;
+}
+
 static esp_err_t epaper_panel_init_stage_1(esp_lcd_panel_t *panel) {
     DEBUG_LOG(TAG, "[%s]", __func__);
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
@@ -702,20 +621,6 @@ static esp_err_t epaper_panel_init_stage_3(esp_lcd_panel_t *panel, const uint8_t
     return ESP_OK;
 }
 
-esp_err_t epaper_panel_set_next_init_mode_ssd1680(esp_lcd_panel_t *panel, epaper_panel_init_mode_t next_init_mode) {
-    DEBUG_LOG(TAG, "[%s]", __func__);
-    epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
-    epaper_panel->next_init_mode = next_init_mode;
-    return ESP_OK;
-}
-
-esp_err_t epaper_panel_set_next_sleep_mode_ssd1680(esp_lcd_panel_t *panel, epaper_panel_sleep_mode_t next_sleep_mode) {
-    DEBUG_LOG(TAG, "[%s]", __func__);
-    epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
-    epaper_panel->next_sleep_mode = next_sleep_mode;
-    return ESP_OK;
-}
-
 static esp_err_t epaper_panel_init_stage_4(esp_lcd_panel_t *panel, uint8_t color) {
     DEBUG_LOG(TAG, "[%s]", __func__);
     DEBUG_MEAS_START();
@@ -739,7 +644,7 @@ static esp_err_t epaper_panel_init_stage_5(esp_lcd_panel_t *panel) {
     DEBUG_MEAS_START();
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     esp_lcd_panel_io_handle_t io = epaper_panel->io;
-    // // --- Display end option
+    // --- Display end option
     // ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD1680_CMD_SET_END_OPTION, (const uint8_t[]) {
     //     SSD1680_PARAM_END_OPTION_KEEP
     // }, 1), TAG, "SSD1681_CMD_SET_END_OPTION err");
@@ -905,11 +810,6 @@ static esp_err_t epaper_panel_disp_on_off(esp_lcd_panel_t *panel, bool on_off) {
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
     return ESP_OK;
 }
-
-#define BIT_SET(a, b) ((a) |= (1u << (b)))
-#define BIT_CLEAR(a, b) ((a) &= ~(1u << (b)))
-#define BIT_FLIP(a, b) ((a) ^= (1u << (b)))
-#define BIT_CHECK(a, b) ((a) & (1u << (b)))
 
 void rotate(uint8_t *img, uint8_t *fb, int width, int height, uint16_t rotation) {
     DEBUG_LOG(TAG, "[%s]", __func__);

@@ -5,7 +5,7 @@
  */
 #pragma once
 
-#include <stdint.h>
+#include "esp_lcd_panel_ssd1680.h"
 
 #if (defined(LCD_ENABLE_DEBUG_LOG))
 #include "esp_timer.h"
@@ -130,3 +130,105 @@
 #define SSD1680_PARAM_SLEEP_MODE_2          0x03
 // used for exit sleep mode
 #define SSD1680_PARAM_SLEEP_MODE_F          0xff
+
+#ifndef min
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+
+#ifndef SWAP_INT
+#define SWAP_INT(a, b) \
+    {                  \
+        int t = a;     \
+        a = b;         \
+        b = t;         \
+    }
+#endif
+
+#define BIT_SET(a, b) ((a) |= (1u << (b)))
+#define BIT_CLEAR(a, b) ((a) &= ~(1u << (b)))
+#define BIT_FLIP(a, b) ((a) ^= (1u << (b)))
+#define BIT_CHECK(a, b) ((a) & (1u << (b)))
+
+typedef struct ram_params_s {
+    int16_t x;
+    // int16_t dx;
+    // int16_t dxe;
+    int16_t y;
+    // int16_t dy;
+    // int16_t dye;
+    int16_t xe;
+    //int16_t xe_orig;
+    int16_t ye;
+    //int16_t ye_orig;
+    int16_t w;
+    //int16_t wb;
+    int16_t h;
+    uint8_t xs_d8;
+    uint8_t xe_d8;
+    uint8_t ys_m256;
+    uint8_t ys_d256;
+    uint8_t ye_m256;
+    uint8_t ye_d256;
+    size_t buffer_size;
+    uint8_t ram_mode;
+} ram_params_t;
+
+typedef struct {
+    esp_lcd_epaper_panel_cb_t callback_ptr;
+    void *args;
+} epaper_panel_callback_t;
+
+typedef struct {
+    esp_lcd_panel_t base;
+    esp_lcd_panel_io_handle_t io;
+    // --- Normal configurations
+    // Configurations from panel_dev_config
+    int reset_gpio_num;
+    bool reset_level;
+    // Configurations from epaper_ssd1680_conf
+    int busy_gpio_num;
+    bool full_refresh;
+    // Configurations from interface functions
+    int gap_x;
+    int gap_y;
+    // Configurations from e-Paper specific public functions
+    epaper_panel_callback_t epaper_refresh_done_isr_callback;
+    esp_lcd_ssd1680_bitmap_color_t bitmap_color;
+    // --- Associated configurations
+    // SHOULD NOT modify directly
+    // in order to avoid going into undefined state
+    bool _non_copy_mode;
+    bool _mirror_y;
+    bool _swap_xy;
+    // --- Other private fields
+    bool _mirror_x;
+    bool _invert_color;
+    bool _is_rotation_done;
+    ram_params_t _ram_params;
+    int16_t width;
+    int16_t height;
+    //const uint8_t *clearbuffer;
+    uint8_t *_framebuffer;
+    size_t _framebuffer_size;
+    epaper_panel_init_mode_t next_init_mode;
+    epaper_panel_sleep_mode_t next_sleep_mode;
+    const uint8_t * next_init_lut;
+} epaper_panel_t;
+
+static esp_err_t process_bitmap(esp_lcd_panel_t *panel, const void *color_data);
+static void epaper_driver_gpio_isr_handler(void *arg);
+static esp_err_t epaper_set_lut(esp_lcd_panel_io_handle_t io, const uint8_t *lut);
+static esp_err_t epaper_panel_del(esp_lcd_panel_t *panel);
+static esp_err_t epaper_panel_reset(esp_lcd_panel_t *panel);
+static esp_err_t epaper_panel_init(esp_lcd_panel_t *panel);
+static esp_err_t epaper_panel_draw_bitmap(esp_lcd_panel_t *panel, int x_start, int y_start, int x_end, int y_end, const void *color_data);
+static esp_err_t epaper_panel_invert_color(esp_lcd_panel_t *panel, bool invert_color_data);
+static esp_err_t epaper_panel_mirror(esp_lcd_panel_t *panel, bool mirror_x, bool mirror_y);
+static esp_err_t epaper_panel_swap_xy(esp_lcd_panel_t *panel, bool swap_axes);
+static esp_err_t epaper_panel_set_gap(esp_lcd_panel_t *panel, int x_gap, int y_gap);
+static esp_err_t epaper_panel_disp_on_off(esp_lcd_panel_t *panel, bool on_off);
+
+void rotate_bitmap(unsigned char *src, unsigned char *dest, int width, int height, unsigned char rotation);
+void rotate(uint8_t *bitmap, uint8_t *framebuffer, int width, int height, uint16_t rotation);
+
+
