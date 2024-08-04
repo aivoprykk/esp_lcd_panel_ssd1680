@@ -55,26 +55,6 @@ The first time you run `idf.py` for the example will cost extra time as the buil
 
 See the [Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html) for full steps to configure and use ESP-IDF to build projects.
 
-### Example Output
-
-```bash
-...
-I (338) example: Initialize SPI bus
-I (348) example: Install panel IO
-I (348) gpio: GPIO[9]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-I (358) gpio: GPIO[4]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-I (368) lcd_panel.epaper: Add handler for GPIO 18
-I (378) gpio: GPIO[18]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 1| Intr:2 
-I (378) example: Resetting e-Paper display...
-I (508) example: Initializing e-Paper display...
-I (628) example: Turning e-Paper display on...
-I (748) example: Initialize LVGL library
-I (748) example: Register display driver to LVGL
-I (748) example: Install LVGL tick timer
-I (748) example: Display LVGL Meter Widget
-...
-```
-
 ## Performance Notice
 
 - LVGL library does not refresh the e-paper panel unless the content of the panel changes. However, the panel is kept refreshing when enabling `Show CPU usage and FPS count`, so do not forget to disable it to avoid unnecessary refresh.

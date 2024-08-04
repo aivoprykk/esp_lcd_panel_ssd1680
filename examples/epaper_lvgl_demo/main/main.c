@@ -64,7 +64,6 @@ static const char *TAG = "example";
 
 #define LVGL_TICK_PERIOD_MS    1
 
-TIMER_INIT
 static SemaphoreHandle_t panel_refreshing_sem = NULL;
 
 extern void example_lvgl_demo_ui(lv_disp_t *disp);
@@ -104,7 +103,7 @@ uint8_t *empty_bitmap;
 
 static void clearScreen(esp_lcd_panel_handle_t panel_handle, uint8_t * color_data)
 {
-    TIMER_S
+    MEAS_START();
     xSemaphoreTake(panel_refreshing_sem, portMAX_DELAY);
     //ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
     // if(update_count++>0)
@@ -112,7 +111,7 @@ static void clearScreen(esp_lcd_panel_handle_t panel_handle, uint8_t * color_dat
     ESP_ERROR_CHECK(epaper_panel_clear_screen_ssd1680(panel_handle, color_data, 0xff));
     // ESP_ERROR_CHECK(epaper_panel_refresh_screen_ssd1680(panel_handle, 0));
     // ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, false));
-    TIMER_E
+    MEAS_END(TAG, "[%s] took %llu us",__func__);
 }
 
 // #define BIT_SET(a, b)       ((a) |= (1u << (b)))
@@ -134,14 +133,14 @@ static void clearScreen(esp_lcd_panel_handle_t panel_handle, uint8_t * color_dat
 
 static void example_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map)
 {
-    TIMER_S
+    MEAS_START();
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) drv->user_data;
     if(update_count==0 || update_count==1000){
         ESP_LOGI(TAG, "Resetting e-Paper display...");
         ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
         delay_ms(100);
         //ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
-        ESP_ERROR_CHECK(epaper_panel_init_screen_ssd1680(panel_handle, INIT_MODE_FULL_2, 0));
+        ESP_ERROR_CHECK(epaper_panel_init_screen_ssd1680(panel_handle, INIT_MODE_FULL_1, 0));
         delay_ms(100);
     }
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
@@ -193,11 +192,11 @@ static void example_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_
     ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, offsetx1, offsety1, offsetx2 + 1, offsety2 + 1, converted_buffer_black));
     ESP_ERROR_CHECK(epaper_panel_refresh_screen_ssd1680(panel_handle, 0));
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, false));
-    if(update_count++>=25) 
+    if(update_count++>15) 
         update_count=0;
     
     lv_disp_flush_ready(drv);
-    TIMER_E
+    MEAS_END(TAG, "[%s] took %llu us",__func__);
 }
 
 static void example_lvgl_wait_cb(struct _lv_disp_drv_t *disp_drv)
@@ -347,6 +346,8 @@ void app_main(void)
     //disp_drv.set_px_cb = my_set_px_cb;
     disp_drv.flush_cb = example_lvgl_flush_cb;
     disp_drv.wait_cb = example_lvgl_wait_cb;
+    disp_drv.direct_mode = 1;
+
     // disp_drv.drv_update_cb = example_lvgl_port_update_callback;
     disp_drv.draw_buf = &disp_buf;
     disp_drv.user_data = panel_handle;

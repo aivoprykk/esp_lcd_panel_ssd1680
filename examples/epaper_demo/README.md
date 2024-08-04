@@ -1,15 +1,15 @@
 # e-Paper Example
 
-The SSD1681 e-paper display drive uses [esp_lcd](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/lcd.html) APIs and provides some additional APIs because of the specificity of e-paper panel.
+The SSD1680 e-paper display drive uses [esp_lcd](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/lcd.html) APIs and provides some additional APIs because of the specificity of e-paper panel.
 
-This example shows how to use SSD1681 e-paper display driver from Component manager and will draw a few bitmaps to the e-paper panel using the SSD1681 e-paper display driver.
+This example shows how to use SSD1680 e-paper display driver from Component manager and will draw a few bitmaps to the e-paper panel using the SSD1680 e-paper display driver.
 
 ## How to use the example
 
 ### Hardware Required
 
 * An ESP development board
-* An SSD1681 e-paper panel, with SPI interface
+* An SSD1680 e-paper panel, with SPI interface
 * An USB cable for power supply and programming
 
 ### Hardware Connection
@@ -17,7 +17,7 @@ This example shows how to use SSD1681 e-paper display driver from Component mana
 The connection between ESP Board and the LCD is as follows:
 
 ```
-       ESP Board                              SSD1681 e-Paper Panel
+       ESP Board                              SSD1680 e-Paper Panel
 ┌──────────────────────────────┐              ┌────────────────────┐
 │      GND                     ├─────────────►│ GND                │
 │                              │              │                    │
@@ -53,24 +53,6 @@ The first time you run `idf.py` for the example will cost extra time as the buil
 (To exit the serial monitor, type ``Ctrl-]``.)
 
 See the [Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html) for full steps to configure and use ESP-IDF to build projects.
-
-### Example Output
-
-```bash
-...
-I (310) epaper_demo_plain: Initializing SPI Bus...
-I (320) epaper_demo_plain: Initializing panel IO...
-I (330) gpio: GPIO[9]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-I (330) epaper_demo_plain: Creating SSD1681 panel...
-I (340) gpio: GPIO[4]| InputEn: 0| OutputEn: 1| OpenDrain: 0| Pullup: 0| Pulldown: 0| Intr:0 
-I (350) lcd_panel.epaper: Add handler for GPIO 18
-I (350) gpio: GPIO[18]| InputEn: 1| OutputEn: 0| OpenDrain: 0| Pullup: 0| Pulldown: 1| Intr:2 
-I (360) epaper_demo_plain: Resetting e-Paper display...
-I (490) epaper_demo_plain: Initializing e-Paper display...
-I (610) epaper_demo_plain: Turning e-Paper display on...
-I (720) epaper_demo_plain: Drawing bitmap...
-...
-```
 
 ## Show Custom Bitmap
 

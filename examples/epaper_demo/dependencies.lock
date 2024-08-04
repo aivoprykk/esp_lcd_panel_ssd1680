@@ -9,7 +9,7 @@ dependencies:
     component_hash: null
     source:
       type: idf
-    version: 5.2.0
+    version: 5.2.2
   logger_common:
     component_hash: null
     source:

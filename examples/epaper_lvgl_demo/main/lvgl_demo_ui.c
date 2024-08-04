@@ -14,6 +14,7 @@
 #include "str.h"
 #include "adc.h"
 #include "button.h"
+#include "esp_log.h"
 
 static lv_obj_t *meter;
 static lv_obj_t *label;
@@ -62,15 +63,15 @@ static void button_cb(int num, l_button_ev_t ev) {
     case L_BUTTON_DOWN:
         button_down = true;
         if(num==0)
-            showPushScreen(0);
+            showPushScreen(0,"");
         break;
     case L_BUTTON_LONG_PRESS_START:
         if(num==0)
-            showPushScreen(1);
+            showPushScreen(1,"");
         break;
     case L_BUTTON_LONG_LONG_PRESS_START:
         if(num==0)
-            showPushScreen(2);
+            showPushScreen(2,"");
         break;
     default:
         break;
@@ -165,9 +166,11 @@ static void timer_cb(lv_timer_t *timer) {
     if(button_down)
         return;
     else if (count == 0) {
+        ESP_LOGI(TAG, "load blank screen");
         scr = blankScreenLoad(false);
     }
     if(count == 1) {
+        ESP_LOGI(TAG, "load sleep screen");
         showSleepScreen();
         ui_status_panel_t * statusbar = &ui_status_panel;
         lv_label_set_text(statusbar->time_label, "12:00 2024-01-01");
@@ -181,30 +184,36 @@ static void timer_cb(lv_timer_t *timer) {
         }
     }
     else if (count <= 2) {
-        showRecordScreen();
+        ESP_LOGI(TAG, "load record screen");
+        showRecordScreen(0);
     }
     
     else if(count == 3) {
+        ESP_LOGI(TAG, "load boot screen");
          showBootScreen("Booting");
     }
 
     else if(count == 4) {
+        ESP_LOGI(TAG, "load low battery screen");
          showLowBatScreen();
     }
 
     else if(count == 5) {
-        showGpsScreen("GPS", "gps test", 0, angle);
+        ESP_LOGI(TAG, "load gps screen");
+        showGpsScreen("GPS", "gps test", "gps data", 0, angle);
         angle += 150;
         if(angle > 3500)
         angle = 0;
     }
     else if(count == 6) {
+        ESP_LOGI(TAG, "load wifi screen");
         loadStatsScreen(4,1);
         f2_to_char(last_speed, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].info, "AVG");
     }
     else if(count == 7){
+        ESP_LOGI(TAG, "load speed screen");
         showSpeedScreen();
         ui_status_panel_t * statusbar = &ui_status_panel;
         f2_to_char(voltage_bat, p);
@@ -227,6 +236,7 @@ static void timer_cb(lv_timer_t *timer) {
     }
     
     else if(count == 8) {
+        ESP_LOGI(TAG, "load stats screen");
         loadStatsScreen(3,1);
         f2_to_char(last_speed, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
@@ -234,6 +244,7 @@ static void timer_cb(lv_timer_t *timer) {
     }
 
     else if(count == 9) {
+        ESP_LOGI(TAG, "load stats screen");
         showStatsScreen22();
         f2_to_char(last_speed, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
@@ -241,6 +252,7 @@ static void timer_cb(lv_timer_t *timer) {
     }
 
     else if(count == 10) {
+        ESP_LOGI(TAG, "load stats screen");
         showStatsScreen32();
         f2_to_char(last_speed, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
@@ -248,19 +260,26 @@ static void timer_cb(lv_timer_t *timer) {
     }
 
     else if(count == 11) {
+        ESP_LOGI(TAG, "load gps trouble screen");
         showGpsTroubleScreen();
     }
     else if(count == 12) {
-        showWifiScreen("majasa","10.0.0.1");
+        ESP_LOGI(TAG, "load wifi screen");
+        showWifiScreen("majasa","10.0.0.1", "password");
+    }
+    else if (count == 13) {
+        ESP_LOGI(TAG, "load splash screen");
+        scr = splashScreenLoad();
     }
 
    if(lscr) {
+    ESP_LOGI(TAG, "delete scr");
         if(lscr==scr)
             scr = 0;
         lv_obj_del(lscr);
     }
 
-    if (count++ >= 12)
+    if (count++ > 12)
         count = 0;
 }
 

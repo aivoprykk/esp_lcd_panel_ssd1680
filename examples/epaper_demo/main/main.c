@@ -8,6 +8,7 @@
 #include <string.h>
 #include "sdkconfig.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
@@ -58,7 +59,6 @@
 static const char *TAG = "epaper_demo_plain";
 static SemaphoreHandle_t epaper_panel_semaphore = 0;
 static uint8_t fast_refresh_lut[] = SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_KEEP;
-TIMER_INIT
 
 static bool give_semaphore_in_isr(const esp_lcd_panel_handle_t handle, const void *edata, void *user_data)
 {
@@ -105,7 +105,7 @@ static void set_rotation(esp_lcd_panel_handle_t panel_handle, uint8_t rotation)
 void drawImg(esp_lcd_panel_handle_t panel_handle, const uint8_t *img, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t rotation, bool swap, bool invert_color, bool partial)
 {
     //vTaskDelay(pdMS_TO_TICKS(WAIT_TIME_MS));
-    TIMER_S
+    MEAS_START();
     ESP_LOGI(TAG, "Drawing image x=%hu, y=%hu, w=%hu, h=%hu, rotation=%hhu", x, y, w, h, rotation);
     xSemaphoreTake(epaper_panel_semaphore, portMAX_DELAY);
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
@@ -125,7 +125,7 @@ void drawImg(esp_lcd_panel_handle_t panel_handle, const uint8_t *img, uint16_t x
     ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, x, y, w, h, img));
     ESP_ERROR_CHECK(epaper_panel_refresh_screen_ssd1680(panel_handle, 0));
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, false));
-    TIMER_E
+    MEAS_END(TAG, "[%s] took %llu us",__func__);
 }
 
 void app_main(void)
