@@ -662,7 +662,7 @@ static esp_err_t epaper_panel_init(esp_lcd_panel_t *panel) {
     ESP_RETURN_ON_ERROR(epaper_panel_init_stage_1(panel), TAG, "param epaper_panel_init_stage_1 err");
     ESP_RETURN_ON_ERROR(epaper_panel_init_stage_2(panel), TAG, "param epaper_panel_init_stage_2 err");
     ESP_RETURN_ON_ERROR(epaper_panel_init_stage_3(panel, epaper_panel->next_init_lut), TAG, "param epaper_panel_init_stage_3 err");
-    ESP_RETURN_ON_ERROR(epaper_panel_init_stage_4(panel, 0xff), TAG, "param epaper_panel_init_stage_4 err");
+    ESP_RETURN_ON_ERROR(epaper_panel_init_stage_4(panel, SSD1680_PARAM_DISP_UPDATE_MODE_0), TAG, "param epaper_panel_init_stage_4 err");
     // ESP_RETURN_ON_ERROR(epaper_panel_init_stage_5(panel), TAG, "param epaper_panel_init_stage_5 err");
     epaper_panel->next_init_lut = NULL;
     return ESP_OK;

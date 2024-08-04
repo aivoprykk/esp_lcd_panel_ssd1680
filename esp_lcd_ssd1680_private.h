@@ -131,6 +131,8 @@
 // used for exit sleep mode
 #define SSD1680_PARAM_SLEEP_MODE_F          0xff
 
+#define SSD1680_CMD_HV_READY                0x14
+
 #ifndef min
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
