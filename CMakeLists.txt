@@ -1,4 +1,6 @@
-idf_component_register(SRCS "esp_lcd_panel_ssd1680.c"
+set(REQ esp_lcd)
+set(SRCS esp_lcd_panel_ssd168x.c)
+idf_component_register(SRCS ${SRCS}
                        INCLUDE_DIRS "include"
-                       REQUIRES "esp_lcd"
+                       REQUIRES ${REQ}
                        PRIV_REQUIRES driver)

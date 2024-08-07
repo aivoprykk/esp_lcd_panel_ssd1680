@@ -245,7 +245,7 @@ static void timer_cb(lv_timer_t *timer) {
 
     else if(count == 9) {
         ESP_LOGI(TAG, "load stats screen");
-        showStatsScreen22();
+        loadStatsScreen(2,2);
         f2_to_char(last_speed, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].info, "MILE");
@@ -253,7 +253,7 @@ static void timer_cb(lv_timer_t *timer) {
 
     else if(count == 10) {
         ESP_LOGI(TAG, "load stats screen");
-        showStatsScreen32();
+        loadStatsScreen(3,2);
         f2_to_char(last_speed, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
         lv_label_set_text(ui_stats_screen.cells[0][0].info, "AVG");

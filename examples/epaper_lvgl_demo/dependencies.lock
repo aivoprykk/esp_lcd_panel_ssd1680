@@ -4,19 +4,25 @@ dependencies:
     source:
       path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/display
       type: local
-    version: '*'
+    version: 0.1.0
   esp_lcd_panel_ssd1680:
     component_hash: null
     source:
       path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/esp_lcd_panel_ssd1680
       type: local
     version: 0.1.0
+  esp_lcd_panel_ssd1681:
+    component_hash: null
+    source:
+      path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/esp_lcd_panel_ssd1681
+      type: local
+    version: 0.1.0
   espressif/button:
-    component_hash: e909337d12ca9e1148007c9e03bb0fdc43d1a7df8b2cf44a76458cc044001a96
+    component_hash: b115c8797f89b883265441aeedf4973a6d49c53bec55159767cdd9cbcd27f328
     source:
       service_url: https://api.components.espressif.com/
       type: service
-    version: 3.2.2
+    version: 3.2.3
   espressif/cmake_utilities:
     component_hash: 351350613ceafba240b761b4ea991e0f231ac7a9f59a9ee901f751bddc0bb18f
     source:
@@ -33,7 +39,7 @@ dependencies:
     source:
       path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/logger_adc
       type: local
-    version: '*'
+    version: 0.1.0
   logger_button:
     component_hash: null
     source:
@@ -51,13 +57,13 @@ dependencies:
     source:
       path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/logger_str
       type: local
-    version: '*'
+    version: 0.1.0
   lvgl/lvgl:
     component_hash: d7c1ac037ae6e85d94897f807d6e7ba0946a83e720074fc95a4f6241da9f9f53
     source:
       service_url: https://api.components.espressif.com/
       type: service
     version: 8.4.0
-manifest_hash: dccc19c4a553248f96ecec82f8b6ceb836dcd95056621f62aa604730c8085eb8
+manifest_hash: 2c2bf704e50485114acadc7d602dac2cb3dc21ab298028379d3f2a5f3c8a1485
 target: esp32
 version: 1.0.0
