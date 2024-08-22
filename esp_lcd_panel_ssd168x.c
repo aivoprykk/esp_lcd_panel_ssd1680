@@ -53,10 +53,12 @@ static esp_err_t set_ram_params(epaper_panel_t *epaper_panel, int x, int y, int 
         SWAP_INT(x, y)
         SWAP_INT(xe, ye)
     }
-    x += epaper_panel->gap_x;
-    xe += epaper_panel->gap_x;
-    y += epaper_panel->gap_y;
-    ye += epaper_panel->gap_y;
+    // if(epaper_panel->_mirror_x && epaper_panel->gap_x) {
+    //     x += epaper_panel->gap_x;
+    //     xe += epaper_panel->gap_x;
+    // }
+    // y += epaper_panel->gap_y;
+    // ye += epaper_panel->gap_y;
     int16_t w = xe - x;
     int16_t h = ye - y;
     // int16_t wb = (w + 7) >> 3u;                                               // calculate source size in bytes (w+7)/8
@@ -178,8 +180,11 @@ static esp_err_t epaper_panel_set_sleep_ctrl(esp_lcd_panel_io_handle_t io, uint8
 }
 
 #ifdef CONFIG_DISPLAY_DRIVER_SSD1680
+#ifdef CONFIG_HAS_SCREEN_GDEY0213B74
+#define GDEQ0213B74 1
+#else
 #define DEPG0213B74 1
-// #define GDEQ0213B74 1
+#endif
 #endif
 
 static esp_err_t epaper_panel_set_cursor(esp_lcd_panel_t *panel) {
@@ -198,7 +203,7 @@ static esp_err_t epaper_panel_set_cursor(esp_lcd_panel_t *panel) {
     switch (epaper_panel->_ram_params.ram_mode) {
         case 0x00:                                                                                // 000 x decrease, y decrease
         case 0x04:                                                                                // 100 x derease, y decrease : xy changed
-            ret = epaper_set_cursor(epaper_panel->io, p->xe_d8 - add_x, p->ye_m256, p->ye_d256);  // set ram
+            ret = epaper_set_cursor(epaper_panel->io, p->xe_d8 + add_xx - add_x, p->ye_m256, p->ye_d256);  // set ram
             break;
         case 0x01:                                                                                 // 001 x increase, y decrease
         case 0x05:                                                                                 // 101 x increase, y decrease : xy changed
@@ -206,7 +211,7 @@ static esp_err_t epaper_panel_set_cursor(esp_lcd_panel_t *panel) {
             break;
         case 0x02:                                                                                // 010 x decrease, y increase
         case 0x06:                                                                                // 110 x decrease, y increase : xy changed
-            ret = epaper_set_cursor(epaper_panel->io, p->xe_d8 - add_x, p->ys_m256, p->ys_d256);  // set ram
+            ret = epaper_set_cursor(epaper_panel->io, p->xe_d8 + add_xx - add_x, p->ys_m256, p->ys_d256);  // set ram
             break;
         case 0x03:                                                                                 // 011 x increase, y increase : normal mode
         case 0x07:                                                                                 // 111 x increase, y increase : xy changed
@@ -251,13 +256,13 @@ static esp_err_t epaper_panel_set_ram_area(esp_lcd_panel_t *panel) {
 #if defined GDEQ0213B74
     add_x = p->w == epaper_panel->width ? 1 : 0;
 #elif defined DEPG0213B74
-    add_xx = 1;  // width is 128, so when w=128, add 1
+    add_xx = 1;
 #endif
 #endif
     switch (epaper_panel->_ram_params.ram_mode) {
         case 0x00:                                                                                                                        // 000 x decrease, y decrease
         case 0x04:                                                                                                                        // 100 x derease, y decrease : xy changed
-            ret = epaper_set_ram_area(epaper_panel->io, p->xe_d8 - add_x, p->xs_d8 - add_x, p->ye_m256, p->ye_d256, p->ys_m256, p->ys_d256);  // X-source area,Y-gate area
+            ret = epaper_set_ram_area(epaper_panel->io, p->xe_d8 + add_xx - add_x, p->xs_d8 + add_xx - add_x, p->ye_m256, p->ye_d256, p->ys_m256, p->ys_d256);  // X-source area,Y-gate area
             break;
         case 0x01:                                                                                                                          // 001 x increase, y decrease
         case 0x05:                                                                                                                          // 101 x increase, y decrease : xy changed
@@ -265,7 +270,7 @@ static esp_err_t epaper_panel_set_ram_area(esp_lcd_panel_t *panel) {
             break;
         case 0x02:                                                                                                                        // 010 x decrease, y increase
         case 0x06:                                                                                                                        // 110 x decrease, y increase : xy changed
-            ret = epaper_set_ram_area(epaper_panel->io, p->xe_d8 - add_x, p->xs_d8 - add_x, p->ys_m256, p->ys_d256, p->ye_m256, p->ye_d256);  // X-source area,Y-gate area
+            ret = epaper_set_ram_area(epaper_panel->io, p->xe_d8 + add_xx - add_x, p->xs_d8 + add_xx - add_x, p->ys_m256, p->ys_d256, p->ye_m256, p->ye_d256);  // X-source area,Y-gate area
             break;
         case 0x03:                                                                                                                          // 011 x increase, y increase : normal mode
         case 0x07:                                                                                                                          // 111 x increase, y increase : xy changed
@@ -608,7 +613,7 @@ static esp_err_t epaper_panel_init_stage_2(esp_lcd_panel_t *panel) {
     DEBUG_LOG(TAG, "[%s]", __func__);
     DEBUG_MEAS_START();
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
-    set_ram_params(epaper_panel, 0, 0, epaper_panel->width, epaper_panel->height, 0x03, false); // default
+    set_ram_params(epaper_panel, 0, 0, epaper_panel->width, epaper_panel->height, epaper_get_ram_mode(panel), false); // default
     // --- Set RAM data entry mode
     ESP_RETURN_ON_ERROR(epaper_set_data_entry_sequence(panel, true), TAG, "epaper_set_data_entry_sequence error");
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
@@ -688,7 +693,7 @@ static esp_err_t epaper_panel_init(esp_lcd_panel_t *panel) {
 }
 
 esp_err_t epaper_panel_init_screen_ssd168x(esp_lcd_panel_t *panel, epaper_panel_init_mode_t next_init_mode, const uint8_t *lut) {
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    DEBUG_LOG(TAG, "[%s] mode: %02x", __func__, next_init_mode);
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     epaper_panel->next_init_mode = next_init_mode;
     epaper_panel->next_init_lut = lut;
@@ -700,7 +705,7 @@ esp_err_t epaper_panel_clear_screen_ssd168x(esp_lcd_panel_t *panel, uint8_t *col
     DEBUG_LOG(TAG, "[%s] color: %02x panelw: %hd panelh: %hd", __func__, color, epaper_panel->width, epaper_panel->height);
     DEBUG_MEAS_START();
     ram_params_t *p = &(epaper_panel->_ram_params);
-    set_ram_params(epaper_panel, 0, 0, epaper_panel->width, epaper_panel->height, 0x03, false);
+    set_ram_params(epaper_panel, 0, 0, epaper_panel->width, epaper_panel->height, epaper_get_ram_mode(panel), false);
     // --- Set cursor & data entry sequence
     ESP_RETURN_ON_ERROR(epaper_set_data_entry_sequence(panel, true), TAG, "pepaper_set_data_entry_sequence error");
     memset(color_data, color, p->buffer_size);
@@ -727,8 +732,8 @@ static esp_err_t epaper_panel_draw_bitmap(esp_lcd_panel_t *panel, int x_start, i
     ESP_RETURN_ON_FALSE((x_start < x_end) && (y_start < y_end), ESP_ERR_INVALID_ARG, TAG, "start position must be smaller than end position");
     // --- Calculate coordinates & sizes
     ram_params_t *p = &(epaper_panel->_ram_params);
-    set_ram_params(epaper_panel, x_start, y_start, x_end, y_end, 0x03, epaper_panel->_swap_xy);
-    p->ram_mode = epaper_get_ram_mode(panel);
+    set_ram_params(epaper_panel, x_start, y_start, x_end, y_end, epaper_get_ram_mode(panel), epaper_panel->_swap_xy);
+    // p->ram_mode = epaper_get_ram_mode(panel);
     ESP_LOGD(TAG, "[%s] converted bounds: {x:%d, y:%d} -> {x:%d, y:%d}", __func__, x_start, y_start, x_end, y_end);
 
     // --- Data copy & preprocess
@@ -746,13 +751,14 @@ static esp_err_t epaper_panel_draw_bitmap(esp_lcd_panel_t *panel, int x_start, i
     // --- Set cursor & data entry sequence
     ESP_RETURN_ON_ERROR(epaper_set_data_entry_sequence(panel, true), TAG, "epaper_set_data_entry_sequence error");
     // --- Send bitmap to e-Paper VRAM
-    if (epaper_panel->bitmap_color == SSD168X_EPAPER_BITMAP_BLACK) {
-        ESP_RETURN_ON_ERROR(epaper_panel_set_vram(epaper_panel->io, (uint8_t *)(!epaper_panel->_non_copy_mode ? epaper_panel->_framebuffer : color_data), NULL, p->buffer_size),
+    uint8_t *data = (uint8_t *)(!epaper_panel->_non_copy_mode ? epaper_panel->_framebuffer : color_data);
+    // if (epaper_panel->bitmap_color == SSD168X_EPAPER_BITMAP_BLACK) {
+    //    ESP_RETURN_ON_ERROR(epaper_panel_set_vram(epaper_panel->io, (uint8_t *)(!epaper_panel->_non_copy_mode ? epaper_panel->_framebuffer : color_data), NULL, p->buffer_size),
+    //                        TAG, "epaper_panel_set_vram error");
+    // } else if (epaper_panel->bitmap_color == SSD168X_EPAPER_BITMAP_RED) {
+        ESP_RETURN_ON_ERROR(epaper_panel_set_vram(epaper_panel->io, data, data, p->buffer_size),
                             TAG, "epaper_panel_set_vram error");
-    } else if (epaper_panel->bitmap_color == SSD168X_EPAPER_BITMAP_RED) {
-        ESP_RETURN_ON_ERROR(epaper_panel_set_vram(epaper_panel->io, NULL, (uint8_t *)(!epaper_panel->_non_copy_mode ? epaper_panel->_framebuffer : color_data), p->buffer_size),
-                            TAG, "epaper_panel_set_vram error");
-    }
+    // }
     // --- Refresh the display, show image in VRAM
     // tx_param will wait until DMA transaction finishes, so it is safe to call panel_epaper_refresh_screen at once.
     // The driver will not call the `epaper_panel_refresh_screen` automatically, please call it manually.
@@ -760,14 +766,14 @@ static esp_err_t epaper_panel_draw_bitmap(esp_lcd_panel_t *panel, int x_start, i
 }
 
 static esp_err_t epaper_panel_invert_color(esp_lcd_panel_t *panel, bool invert_color_data) {
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    DEBUG_LOG(TAG, "[%s] %s", __func__, invert_color_data ? "true" : "false");
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     epaper_panel->_invert_color = invert_color_data;
     return ESP_OK;
 }
 
 static esp_err_t epaper_panel_mirror(esp_lcd_panel_t *panel, bool mirror_x, bool mirror_y) {
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    DEBUG_LOG(TAG, "[%s] %s %s", __func__, mirror_x ? "mirror_x" : "", mirror_y ? "mirror_y" : "");
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     // if (mirror_y) {
     //     if (epaper_panel->_non_copy_mode) {
@@ -782,7 +788,7 @@ static esp_err_t epaper_panel_mirror(esp_lcd_panel_t *panel, bool mirror_x, bool
 }
 
 static esp_err_t epaper_panel_swap_xy(esp_lcd_panel_t *panel, bool swap_axes) {
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    DEBUG_LOG(TAG, "[%s] %s", __func__, swap_axes ? "true" : "false");
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     // if (swap_axes) {
     //     if (epaper_panel->_non_copy_mode) {
@@ -803,7 +809,7 @@ static esp_err_t epaper_panel_set_gap(esp_lcd_panel_t *panel, int x_gap, int y_g
 }
 
 static esp_err_t epaper_panel_disp_on_off(esp_lcd_panel_t *panel, bool on_off) {
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    DEBUG_LOG(TAG, "[%s] %s", __func__, on_off ? "on" : "off");
     DEBUG_MEAS_START();
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     esp_lcd_panel_io_handle_t io = epaper_panel->io;

@@ -1,14 +1,11 @@
 /*
- * SPDX-FileCopyrightText: 2021-2023 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 
 #include "esp_lcd_panel_ssd168x.h"
 #include "sdkconfig.h"
 
-#if (defined(LCD_ENABLE_DEBUG_LOG))
+#if (defined(CONFIG_LCD_ENABLE_DEBUG_LOG))
 #include "esp_timer.h"
 #define DEBUG_LOG(a, b, ...) ESP_LOGI(a, b, __VA_ARGS__)
 #define DEBUG_MEAS_START() uint64_t _start = (esp_timer_get_time()), _end = 0
