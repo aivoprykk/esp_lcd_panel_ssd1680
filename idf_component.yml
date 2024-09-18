@@ -1,6 +1,6 @@
 dependencies:
   idf:
     version: '>=5.0'
-description: ESP LCD SSD1680 e-paper driver
+description: ESP LCD SSD168X e-paper driver
 url: https://github.com/aivoprykk/esp_lcd_panel_ssd1680.git
 version: 0.1.0

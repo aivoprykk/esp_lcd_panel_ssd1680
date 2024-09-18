@@ -1,9 +1,5 @@
-/*
- * SPDX-FileCopyrightText: 2023 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: Unlicense OR CC0-1.0
- */
-#pragma once
+#ifndef CAF1229D_CEFE_4E56_8A35_34A403244EAF
+#define CAF1229D_CEFE_4E56_8A35_34A403244EAF
 
 #define SSD1680_WAVESHARE_2IN13_V2_LUT_FULL_REFRESH_2 ((uint8_t[]) { \
         0x80,0x60,0x40,0x00,0x00,0x00,0x00,          /* //LUT0: BB:     VS 0 ~7 */ \
@@ -333,3 +329,6 @@
       /* --- Other register params, do not transfer together with data above */ \
         0x07, 0x17, 0x41, 0x00, 0x32, 0x20 \
 };
+
+
+#endif /* CAF1229D_CEFE_4E56_8A35_34A403244EAF */

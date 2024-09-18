@@ -1,6 +1,5 @@
-/*
- */
-#pragma once
+#ifndef F5CBFF08_82AE_4990_9783_EAB40C00C544
+#define F5CBFF08_82AE_4990_9783_EAB40C00C544
 
 #include "esp_lcd_panel_ssd168x.h"
 #include "sdkconfig.h"
@@ -244,3 +243,6 @@ void rotate_bitmap(unsigned char *src, unsigned char *dest, int width, int heigh
 void rotate(uint8_t *bitmap, uint8_t *framebuffer, int width, int height, uint16_t rotation);
 
 
+
+
+#endif /* F5CBFF08_82AE_4990_9783_EAB40C00C544 */

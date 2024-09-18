@@ -1,9 +1,5 @@
-/*
- * SPDX-FileCopyrightText: 2023 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-#pragma once
+#ifndef BD037828_E005_4B81_87EC_7A54E4146595
+#define BD037828_E005_4B81_87EC_7A54E4146595
 
 #include <stdbool.h>
 #include "esp_lcd_panel_vendor.h"
@@ -159,3 +155,6 @@ typedef enum {
 #ifdef __cplusplus
 }
 #endif
+
+
+#endif /* BD037828_E005_4B81_87EC_7A54E4146595 */

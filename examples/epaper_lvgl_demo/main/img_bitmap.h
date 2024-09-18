@@ -1,9 +1,5 @@
-/*
- * SPDX-FileCopyrightText: 2023 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: Unlicense OR CC0-1.0
- */
-#pragma once
+#ifndef A5250FAE_27E4_41AB_886F_230334B62B36
+#define A5250FAE_27E4_41AB_886F_230334B62B36
 
 #include <stdint.h>
 #include "lvgl.h"
@@ -24,3 +20,6 @@ extern const uint8_t esp_gps_logo_122[];
 #ifdef __cplusplus
 }
 #endif
+
+
+#endif /* A5250FAE_27E4_41AB_886F_230334B62B36 */

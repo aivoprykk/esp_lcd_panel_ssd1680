@@ -1,9 +1,3 @@
-/*
- * SPDX-FileCopyrightText: 2021-2022 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: CC0-1.0
- */
-
 #include <stdio.h>
 #include <esp_lcd_panel_ssd1680.h>
 #include "freertos/FreeRTOS.h"
@@ -32,7 +26,7 @@ static const char *TAG = "example";
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////// Please update the following configuration according to your LCD spec //////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#define LCD_PIXEL_CLOCK_HZ     1000000 // (20 * 1000 * 1000)
+#define LCD_PIXEL_CLOCK_HZ               1000000
 #define LCD_PANEL_PIN_NUM_SCLK           18
 #define LCD_PANEL_PIN_NUM_MOSI           23
 #define LCD_PANEL_PIN_NUM_MISO           (-1)   // Unused
@@ -41,19 +35,6 @@ static const char *TAG = "example";
 #define LCD_PANEL_PIN_NUM_EPD_CS         5
 #define LCD_PANEL_PIN_NUM_EPD_BUSY       4
 
-// The pixel number in horizontal and vertical
-// screen
-// #define LCD_H_GAP 0
-// #define LCD_V_GAP 0
-// #define LCD_H_RES              128 // screen native x resolution
-// #define LCD_H_VISIBLE          122 // screen visible x resolution
-// #define LCD_V_RES              250 // screen native y resolution
-// #define LCD_RESOLUTION  (LCD_H_RES * LCD_V_RES)
-// #define LCD_ROW_LEN     (LCD_H_RES / 8)           // gates for x resolution
-// #define LCD_PIXELS      (LCD_V_RES * LCD_ROW_LEN) // total pixels
-// #define BYTE_PADDING(w) (((w + 7u) >> 3u) << 3u) // Align to nearest 8 bits
-// #define LCD_PIXELS_MEM_ALIGNED (LCD_H_RES * BYTE_PADDING(LCD_V_RES) / 8)
-// driver
 #define SSD1680_MEM_SOURCE_SIZE   176   // driver native source size
 #define SSD1680_MEM_GATE_SIZE     296   // driver native gate size
 #define SSD1680_MEM_SOURCE_LEN    (SSD1680_MEM_SOURCE_SIZE / 8)
