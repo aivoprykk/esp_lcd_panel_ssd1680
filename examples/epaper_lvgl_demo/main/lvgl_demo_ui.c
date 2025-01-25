@@ -3,7 +3,7 @@
 #include "private.h"
 
 #include "logger_common.h"
-#include "str.h"
+#include "numstr.h"
 #include "adc.h"
 #include "button.h"
 #include "esp_log.h"

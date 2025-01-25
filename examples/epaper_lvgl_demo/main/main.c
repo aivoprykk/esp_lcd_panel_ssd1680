@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <esp_lcd_panel_ssd1680.h>
+#include <esp_lcd_panel_ssd168x.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
@@ -167,9 +167,9 @@ static void example_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_
     else
         ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, false));
 
-    ESP_ERROR_CHECK(epaper_panel_set_bitmap_color_ssd1680(panel_handle, SSD1680_EPAPER_BITMAP_BLACK));
+    ESP_ERROR_CHECK(epaper_panel_set_bitmap_color_ssd168x(panel_handle, SSD168X_EPAPER_BITMAP_BLACK));
     ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, offsetx1, offsety1, offsetx2 + 1, offsety2 + 1, converted_buffer_black));
-    ESP_ERROR_CHECK(epaper_panel_set_bitmap_color_ssd1680(panel_handle, SSD1680_EPAPER_BITMAP_RED));
+    ESP_ERROR_CHECK(epaper_panel_set_bitmap_color_ssd168x(panel_handle, SSD168X_EPAPER_BITMAP_RED));
     ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, offsetx1, offsety1, offsetx2 + 1, offsety2 + 1, converted_buffer_black));
     ESP_ERROR_CHECK(epaper_panel_refresh_screen_ssd1680(panel_handle, 0));
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, false));
@@ -255,7 +255,7 @@ void app_main(void)
     esp_lcd_panel_handle_t panel_handle = NULL;
 
     // --- Create esp_lcd panel
-    esp_lcd_ssd1680_config_t epaper_ssd1680_config = {
+    esp_lcd_ssd168x_config_t epaper_ssd1680_config = {
         .busy_gpio_num = LCD_PANEL_PIN_NUM_EPD_BUSY,
         .non_copy_mode = true,
         .height = LCD_V_RES,

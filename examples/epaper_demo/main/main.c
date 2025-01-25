@@ -1,9 +1,3 @@
-/*
- * SPDX-FileCopyrightText: 2010-2022 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: CC0-1.0
- */
-
 #include <inttypes.h>
 #include <string.h>
 #include "sdkconfig.h"
@@ -14,7 +8,7 @@
 #include "freertos/semphr.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_vendor.h"
-#include "esp_lcd_panel_ssd1680.h"
+#include "esp_lcd_panel_ssd168x.h"
 #include "esp_lcd_panel_ops.h"
 #include "driver/spi_common.h"
 #include "driver/gpio.h"
@@ -121,7 +115,7 @@ void drawImg(esp_lcd_panel_handle_t panel_handle, const uint8_t *img, uint16_t x
         ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd1680(panel_handle, fast_refresh_lut, 159));
     // ESP_ERROR_CHECK(epaper_panel_set_bitmap_color_ssd1680(panel_handle, SSD1680_EPAPER_BITMAP_RED));
     // ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, x, y, w, h, img));
-    ESP_ERROR_CHECK(epaper_panel_set_bitmap_color_ssd1680(panel_handle, SSD1680_EPAPER_BITMAP_BLACK));
+    ESP_ERROR_CHECK(epaper_panel_set_bitmap_color_ssd168x(panel_handle, SSD168X_EPAPER_BITMAP_BLACK));
     ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, x, y, w, h, img));
     ESP_ERROR_CHECK(epaper_panel_refresh_screen_ssd1680(panel_handle, 0));
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, false));
@@ -158,7 +152,7 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t) LCD_HOST, &io_config, &io_handle));
     // --- Create esp_lcd panel
     ESP_LOGI(TAG, "Creating SSD1680 panel...");
-    esp_lcd_ssd1680_config_t epaper_ssd1680_config = {
+    esp_lcd_ssd168x_config_t epaper_ssd1680_config = {
         .busy_gpio_num = EXAMPLE_PIN_NUM_EPD_BUSY,
         // NOTE: Enable this to reduce one buffer copy if you do not use swap-xy, mirror y or invert color
         // since those operations are not supported by ssd1680 and are implemented by software
