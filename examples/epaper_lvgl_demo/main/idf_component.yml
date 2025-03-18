@@ -5,8 +5,8 @@ dependencies:
     path: "../../../../esp_lcd_panel_ssd1680"
   logger_common: 
     path: "../../../../logger_common"
-  logger_str: 
-    path: "../../../../logger_str"
+  strutil: 
+    path: "../../../../strutil"
   display:
     path: "../../../../display"
   logger_adc:

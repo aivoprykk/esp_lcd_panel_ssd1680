@@ -1,0 +1,34 @@
+menu "SSD168X EPD Module Options"
+    if DISPLAY_DRIVER_SSD168X
+    choice SSD168X_PANEL
+        prompt "Installed Panel"
+        default SSD168X_PANEL_SSD1680
+        config SSD168X_PANEL_SSD1680
+            bool "SSD1680"
+        config SSD168X_PANEL_SSD1681
+            bool "SSD1681"
+    endchoice
+    choice SSD168X_SCREEN
+        prompt "Screen model"
+        default SSD168X_SCREEN_DEPG0213BN if SSD168X_PANEL_SSD1680
+        default SSD168X_SCREEN_GDEY0154D67 if SSD168X_PANEL_SSD1681
+        config SSD168X_SCREEN_DEPG0213BN
+            depends on SSD168X_PANEL_SSD1680
+            bool "DEPG0213BN 2.13 122x250 Eink"
+            help
+                Select if screen model is DEPG0213BN
+        config SSD168X_SCREEN_GDEY0213B74
+            depends on SSD168X_PANEL_SSD1680
+            bool "GDEY0213B74 2.13 122x250 Eink"
+            help 
+                Select if screen model is GDEY0213B74
+    
+        config SSD168X_SCREEN_GDEY0154D67
+            depends on SSD168X_PANEL_SSD1681
+            bool "GDEY0154D67 1.54 200x200 Eink"
+            help 
+                Select if screen model is GDEY0154D67
+    
+    endchoice
+    endif
+endmenu

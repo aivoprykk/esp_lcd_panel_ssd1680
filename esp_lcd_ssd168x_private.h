@@ -24,7 +24,7 @@
 #define SSD168X_CMD_SWRST                   0x12
 // --- Driver output control
 #define SSD168X_CMD_OUTPUT_CTRL             0x01
-#if defined(CONFIG_DISPLAY_DRIVER_SSD1681)
+#if defined(CONFIG_SSD168X_PANEL_SSD1681)
 #define SSD168X_PARAM_OUTPUT_CTRL           ((const uint8_t[]) {0xc7, 0x00, 0x00}) // 100000000 = 01 00 = 256 gates used of 296
 #else 
 #define SSD168X_PARAM_OUTPUT_CTRL           ((const uint8_t[]) {0x00, 0x01, 0x00}) // 100000000 = 01 00 = 256 gates used of 296
@@ -60,7 +60,7 @@
 // Fix Level Setting for VBD VSS,
 // GS Transition control Follow LUT
 // GS Transition setting for VBD LUT1
-#if defined(CONFIG_DISPLAY_DRIVER_SSD1681)
+#if defined(CONFIG_SSD168X_PANEL_SSD1681)
 #define SSD168X_PARAM_BORDER_WAVEFORM       0x01
 #else
 #define SSD168X_PARAM_BORDER_WAVEFORM       0x05
@@ -87,7 +87,7 @@
 // Display with DISPLAY Mode 1
 // Disable Analog
 // Disable OSC
-#if defined(CONFIG_DISPLAY_DRIVER_SSD1681)
+#if defined(CONFIG_SSD168X_PANEL_SSD1681)
 #define SSD168X_PARAM_DISP_UPDATE_MODE_1    0xb1
 #else
 #define SSD168X_PARAM_DISP_UPDATE_MODE_1    0xf7

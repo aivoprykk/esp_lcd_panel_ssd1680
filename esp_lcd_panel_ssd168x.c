@@ -20,11 +20,11 @@
 
 #define SSD168X_LUT_SIZE 159
 
-#if defined(CONFIG_DISPLAY_DRIVER_SSD1680)
+#if defined(CONFIG_SSD168X_PANEL_SSD1680)
 #define SSD168X_SOURCE_SIZE 176
 #define SSD168X_GATE_SIZE 296
 #endif
-#if defined(CONFIG_DISPLAY_DRIVER_SSD1681)
+#if defined(CONFIG_SSD168X_PANEL_SSD1681)
 #define SSD168X_SOURCE_SIZE 200
 #define SSD168X_GATE_SIZE 200
 #endif
@@ -174,24 +174,16 @@ static esp_err_t epaper_panel_set_sleep_ctrl(esp_lcd_panel_io_handle_t io, uint8
     return ESP_OK;
 }
 
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1680
-#ifdef CONFIG_HAS_SCREEN_GDEY0213B74
-#define GDEQ0213B74 1
-#else
-#define DEPG0213B74 1
-#endif
-#endif
-
 static esp_err_t epaper_panel_set_cursor(esp_lcd_panel_t *panel) {
     DEBUG_LOG(TAG,"[%s]",__func__);
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     ram_params_t *p = &(epaper_panel->_ram_params);
     esp_err_t ret = ESP_OK;
     uint8_t add_x = 0, add_xx = 0;
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1680
-#if defined GDEQ0213B74
+#ifdef CONFIG_SSD168X_PANEL_SSD1680
+#if defined CONFIG_SSD168X_SCREEN_GDEY0213B74
     add_x = p->w == epaper_panel->width ? 1 : 0;
-#elif defined DEPG0213B74
+#elif defined CONFIG_SSD168X_SCREEN_DEPG0213BN
     add_xx = 1;
 #endif
 #endif
@@ -247,10 +239,10 @@ static esp_err_t epaper_panel_set_ram_area(esp_lcd_panel_t *panel) {
     ram_params_t *p = &(epaper_panel->_ram_params);
     esp_err_t ret = ESP_OK;
     uint8_t add_x = 0, add_xx = 0;
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1680
-#if defined GDEQ0213B74
+#ifdef CONFIG_SSD168X_PANEL_SSD1680
+#if defined CONFIG_SSD168X_SCREEN_GDEY0213B74
     add_x = p->w == epaper_panel->width ? 1 : 0;
-#elif defined DEPG0213B74
+#elif defined CONFIG_SSD168X_SCREEN_DEPG0213BN
     add_xx = 1;
 #endif
 #endif
