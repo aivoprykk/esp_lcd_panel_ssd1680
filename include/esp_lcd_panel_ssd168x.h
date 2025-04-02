@@ -136,10 +136,16 @@ uint8_t is_mirrored(esp_lcd_panel_t *panel);
 esp_err_t epaper_panel_clear_screen_ssd168x(esp_lcd_panel_t *panel, uint8_t * color_data, uint8_t color);
 
 typedef enum {
-    INIT_MODE_PARTIAL = 0x00,
+    /// Display Update Control 2 : Display Update Sequence Option:  Enable the stage for Master Activation
+    /// Enable clock signal, Enable Analog 
+    INIT_MODE_PARTIAL = 0xc0,
+    /// Enable clock signal, Enable Analog,  Display with DISPLAY Mode 1,  Disable Analog,  Disable OSC 
     INIT_MODE_FAST_1 = 0xc7,
+    /// Enable clock signal,  Enable Analog,  Display with DISPLAY Mode 2,  Disable Analog, Disable OSC
     INIT_MODE_FAST_2 = 0xcf,
+    /// Enable clock signal, Enable Analog, Load temperature value, DISPLAY with DISPLAY Mode 1, Disable Analog, Disable OSC
     INIT_MODE_FULL_1 = 0xf7,
+    /// Enable clock signal, Enable Analog, Load temperature value, DISPLAY with DISPLAY Mode 2, Disable Analog, Disable OSC
     INIT_MODE_FULL_2 = 0xff,
 } epaper_panel_init_mode_t;
 
