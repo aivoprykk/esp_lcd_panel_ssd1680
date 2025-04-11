@@ -237,7 +237,7 @@ static esp_err_t epaper_panel_set_cursor(esp_lcd_panel_t *panel) {
     uint8_t add_x = 0, add_xx = 0;
 #ifdef CONFIG_SSD168X_PANEL_SSD1680
 #if defined CONFIG_SSD168X_SCREEN_GDEY0213B74
-    add_x = p->w == epaper_panel->width ? 1 : 0;
+    add_x = 0;
 #elif defined CONFIG_SSD168X_SCREEN_DEPG0213BN
     add_xx = 1;
 #endif
@@ -310,7 +310,7 @@ static esp_err_t epaper_panel_set_ram_area(esp_lcd_panel_t *panel) {
     uint8_t add_x = 0, add_xx = 0;
 #ifdef CONFIG_SSD168X_PANEL_SSD1680
 #if defined CONFIG_SSD168X_SCREEN_GDEY0213B74
-    add_x = p->w == epaper_panel->width ? 1 : 0;
+    add_x = 0;
 #elif defined CONFIG_SSD168X_SCREEN_DEPG0213BN
     add_xx = 1;
 #endif

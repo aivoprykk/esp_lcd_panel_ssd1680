@@ -155,10 +155,10 @@
     }
 #endif
 
-#define BIT_SET(a, b) ((a) |= (1u << (b)))
-#define BIT_CLEAR(a, b) ((a) &= ~(1u << (b)))
-#define BIT_FLIP(a, b) ((a) ^= (1u << (b)))
-#define BIT_CHECK(a, b) ((a) & (1u << (b)))
+#define BIT_SET(a, b)   ((a) |= (1u << (uint8_t)(b)))
+#define BIT_CLEAR(a, b) ((a) &= (~(1u << (uint8_t)(b))))
+#define BIT_FLIP(a, b)  ((a) ^= (1u << (uint8_t)(b)))
+#define BIT_CHECK(a, b) ((a) &  (1u << (uint8_t)(b)))
 
 typedef struct ram_params_s {
     int16_t x;
