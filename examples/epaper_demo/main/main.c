@@ -8,6 +8,7 @@
 #include "freertos/semphr.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_vendor.h"
+#include "esp_lcd_ssd168x_private.h"
 #include "esp_lcd_panel_ssd168x.h"
 #include "esp_lcd_panel_ops.h"
 #include "driver/spi_common.h"
@@ -99,7 +100,7 @@ static void set_rotation(esp_lcd_panel_handle_t panel_handle, uint8_t rotation)
 void drawImg(esp_lcd_panel_handle_t panel_handle, const uint8_t *img, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t rotation, bool swap, bool invert_color, bool partial)
 {
     //vTaskDelay(pdMS_TO_TICKS(WAIT_TIME_MS));
-    MEAS_START();
+    // MEAS_START();
     ESP_LOGI(TAG, "Drawing image x=%hu, y=%hu, w=%hu, h=%hu, rotation=%hhu", x, y, w, h, rotation);
     xSemaphoreTake(epaper_panel_semaphore, portMAX_DELAY);
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
@@ -112,14 +113,14 @@ void drawImg(esp_lcd_panel_handle_t panel_handle, const uint8_t *img, uint16_t x
         ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, swap));
     }
     if(partial)
-        ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd1680(panel_handle, fast_refresh_lut, 159));
+        ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd168x(panel_handle, fast_refresh_lut, 159));
     // ESP_ERROR_CHECK(epaper_panel_set_bitmap_color_ssd1680(panel_handle, SSD1680_EPAPER_BITMAP_RED));
     // ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, x, y, w, h, img));
     ESP_ERROR_CHECK(epaper_panel_set_bitmap_color_ssd168x(panel_handle, SSD168X_EPAPER_BITMAP_BLACK));
     ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, x, y, w, h, img));
-    ESP_ERROR_CHECK(epaper_panel_refresh_screen_ssd1680(panel_handle, 0));
+    ESP_ERROR_CHECK(epaper_panel_refresh_screen_ssd168x(panel_handle, 0));
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, false));
-    MEAS_END(TAG, "[%s] took %llu us",__func__);
+    //MEAS_END(TAG, "[%s] took %llu us",__func__);
 }
 
 void app_main(void)
@@ -171,7 +172,7 @@ void app_main(void)
     // NOTE: Please call gpio_install_isr_service() manually before esp_lcd_new_panel_ssd1680()
     // because gpio_isr_handler_add() is called in esp_lcd_new_panel_ssd1680()
     gpio_install_isr_service(0);
-    ret = esp_lcd_new_panel_ssd1680(io_handle, &panel_config, &panel_handle);
+    ret = esp_lcd_new_panel_ssd168x(io_handle, &panel_config, &panel_handle);
     ESP_ERROR_CHECK(ret);
     // --- Reset the display
     ESP_LOGI(TAG, "Resetting e-Paper display...");
@@ -209,7 +210,7 @@ void app_main(void)
         .on_epaper_refresh_done = give_semaphore_in_isr,
     };
 
-    epaper_panel_register_event_callbacks_ssd1680(panel_handle, &cbs, &epaper_panel_semaphore);
+    epaper_panel_register_event_callbacks_ssd168x(panel_handle, &cbs, &epaper_panel_semaphore);
     
     // --- Draw full-screen bitmap
     // epaper_panel_clear_screen_ssd1680(panel_handle, 0x0);

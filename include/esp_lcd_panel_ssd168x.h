@@ -151,6 +151,8 @@ typedef enum {
 
 esp_err_t epaper_panel_init_screen_ssd168x(esp_lcd_panel_t *panel, epaper_panel_init_mode_t next_init_mode, const uint8_t *lut);
 esp_err_t epaper_panel_set_next_init_mode_ssd168x(esp_lcd_panel_t *panel, epaper_panel_init_mode_t next_init_mode);
+esp_err_t epaper_panel_shut_down(esp_lcd_panel_t *panel);
+esp_err_t epaper_panel_update_full_screen_ssd168x(esp_lcd_panel_t *panel);
 
 typedef enum {
     SLEEP_MODE_NORMAL = 0x00,

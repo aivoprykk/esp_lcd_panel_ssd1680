@@ -8,8 +8,8 @@
 #define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
 #endif
 #include "driver/gpio.h"
-#include "esp_attr.h"
-#include "esp_check.h"
+// #include "esp_attr.h"
+// #include "esp_check.h"
 #include "esp_lcd_panel_interface.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_ssd168x.h"
@@ -39,7 +39,6 @@
 
 static const char *TAG = "lcd_panel.epaper";
 static const char *drv_msg[] = {"SSD168X_CMD_", "SET_", "err", "panel handler is NULL"};
-
 static esp_err_t set_ram_params(epaper_panel_t *epaper_panel, int x, int y, int xe, int ye, uint8_t em, bool swap_xy) {
     ram_params_t *p = &(epaper_panel->_ram_params);
 #if (defined(CONFIG_LCD_ENABLE_DEBUG_LOG))
@@ -495,6 +494,14 @@ static esp_err_t epaper_set_driver_output(esp_lcd_panel_t *panel) {
     return ESP_OK;
 }
 
+esp_err_t epaper_panel_update_full_screen_ssd168x(esp_lcd_panel_t *panel) {
+    epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
+    if(epaper_set_active_display_update_sequence(epaper_panel->io)!=ESP_OK) {
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
+
 esp_err_t epaper_panel_refresh_screen_ssd168x(esp_lcd_panel_t *panel, uint8_t update_mode) {
     DEBUG_LOG(TAG,"[%s]",__func__);
     if(!panel) {
@@ -542,6 +549,7 @@ esp_lcd_new_panel_ssd168x(const esp_lcd_panel_io_handle_t io, const esp_lcd_pane
 
     // --- Construct panel & implement interface
     // defaults
+    epaper_panel->is_on = false;
     epaper_panel->next_init_lut = NULL;
     epaper_panel->next_init_mode = INIT_MODE_FAST_2;
     epaper_panel->next_sleep_mode = SLEEP_MODE_DEEP_1;
@@ -676,6 +684,7 @@ static esp_err_t epaper_panel_software_reset(esp_lcd_panel_t *panel) {
         ESP_LOGE(TAG, "%sSWRST %s", drv_msg[0], drv_msg[2]);
         return ESP_FAIL;
     }
+    epaper_panel->is_on = true;
     return ESP_OK;
 }
 
@@ -760,7 +769,7 @@ static esp_err_t epaper_panel_init_stage_3(esp_lcd_panel_t *panel, const uint8_t
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     esp_lcd_panel_io_handle_t io = epaper_panel->io;
     // --- Border Waveform Control
-    if(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD168X_CMD_SET_BORDER_WAVEFORM, (const uint8_t[]){SSD168X_PARAM_BORDER_WAVEFORM}, 1)!= ESP_OK) {
+    if(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD168X_CMD_SET_BORDER_WAVEFORM, (const uint8_t[]){SSD168X_PARAM_BORDER_WAVEFORM_0}, 1)!= ESP_OK) {
         ESP_LOGE(TAG, "%s%sBORDER_WAVEFORM %s", drv_msg[0], drv_msg[1], drv_msg[2]);
         return ESP_FAIL;
     }
@@ -773,6 +782,9 @@ static esp_err_t epaper_panel_init_stage_3(esp_lcd_panel_t *panel, const uint8_t
 
     if (lut) {
         if(epaper_set_lut(io, lut)) {
+            return ESP_FAIL;
+        }
+        if(esp_lcd_panel_io_tx_param(epaper_panel->io, 0x37, (const uint8_t[]){0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00}, 10)!= ESP_OK) {
             return ESP_FAIL;
         }
     } else {
@@ -852,7 +864,9 @@ static esp_err_t epaper_panel_init(esp_lcd_panel_t *panel) {
 }
 
 esp_err_t epaper_panel_init_screen_ssd168x(esp_lcd_panel_t *panel, epaper_panel_init_mode_t next_init_mode, const uint8_t *lut) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s] mode: %02x", __func__, next_init_mode);
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     epaper_panel->next_init_mode = next_init_mode;
     epaper_panel->next_init_lut = lut;
@@ -999,23 +1013,34 @@ static esp_err_t epaper_panel_disp_on_off(esp_lcd_panel_t *panel, bool on_off) {
             return ESP_FAIL;
         }
         panel_epaper_wait_busy(panel);
-    } else {
-        uint8_t sleep_mode = SSD168X_PARAM_SLEEP_MODE_1;
-        if(epaper_panel->next_sleep_mode==SLEEP_MODE_NORMAL) {
-            sleep_mode = SSD168X_PARAM_SLEEP_MODE_0;
-        }
-        else if(epaper_panel->next_sleep_mode==SLEEP_MODE_DEEP_2) {
-            sleep_mode = SSD168X_PARAM_SLEEP_MODE_2;
-        }
-        // Sleep mode, BUSY pin will keep HIGH after entering sleep mode
-        // Perform reset and re-run init to resume the display
-        if(epaper_panel_set_sleep_ctrl(io, sleep_mode)) {
-            return ESP_FAIL;
-        }
-        // BUSY pin will stay HIGH, so do not call panel_epaper_wait_busy() here
-        epaper_panel->next_sleep_mode=SLEEP_MODE_DEEP_1;
+    /// don't turn off display here, otherways partial refresh will not work
+    // } else {
+        // if(epaper_panel_shut_down(panel)) {
+        //     return ESP_FAIL;
+        // }
     }
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
+    return ESP_OK;
+}
+
+esp_err_t epaper_panel_shut_down(esp_lcd_panel_t *panel) {
+    DEBUG_LOG(TAG, "[%s]", __func__);
+    epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
+    esp_lcd_panel_io_handle_t io = epaper_panel->io;
+    uint8_t sleep_mode = SSD168X_PARAM_SLEEP_MODE_1;
+    if(epaper_panel->next_sleep_mode==SLEEP_MODE_NORMAL) {
+        sleep_mode = SSD168X_PARAM_SLEEP_MODE_0;
+    }
+    else if(epaper_panel->next_sleep_mode==SLEEP_MODE_DEEP_2) {
+        sleep_mode = SSD168X_PARAM_SLEEP_MODE_2;
+    }
+    // Sleep mode, BUSY pin will keep HIGH after entering sleep mode
+    // Perform reset and re-run init to resume the display
+    if(epaper_panel_set_sleep_ctrl(io, sleep_mode)) {
+        return ESP_FAIL;
+    }
+    // BUSY pin will stay HIGH, so do not call panel_epaper_wait_busy() here
+    epaper_panel->next_sleep_mode=SLEEP_MODE_DEEP_1;
     return ESP_OK;
 }
 

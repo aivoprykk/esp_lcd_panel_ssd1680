@@ -61,9 +61,10 @@
 // GS Transition control Follow LUT
 // GS Transition setting for VBD LUT1
 #if defined(CONFIG_SSD168X_PANEL_SSD1681)
-#define SSD168X_PARAM_BORDER_WAVEFORM       0x01
+#define SSD168X_PARAM_BORDER_WAVEFORM_0       0x01
 #else
-#define SSD168X_PARAM_BORDER_WAVEFORM       0x05
+#define SSD168X_PARAM_BORDER_WAVEFORM_0       0x05
+#define SSD168X_PARAM_BORDER_WAVEFORM_1       0x80
 #endif
 // --- Temperature Sensor Control
 #define SSD168X_CMD_SET_TEMP_SENSOR         0x18
@@ -224,7 +225,63 @@ typedef struct {
     epaper_panel_init_mode_t next_init_mode;
     epaper_panel_sleep_mode_t next_sleep_mode;
     const uint8_t * next_init_lut;
+    bool is_on;
 } epaper_panel_t;
+
+#define EPAPER_PANEL_DEFAULTS { \
+    .base = { \
+        .del = NULL, \
+        .reset = NULL, \
+        .init = NULL, \
+        .draw_bitmap = NULL, \
+        .invert_color = NULL, \
+        .set_gap = NULL, \
+        .mirror = NULL, \
+        .swap_xy = NULL, \
+        .disp_on_off = NULL, \
+    }, \
+    .io = 0, \
+    .reset_gpio_num = -1, \
+    .reset_level = false, \
+    .busy_gpio_num = -1, \
+    .full_refresh = true, \
+    .gap_x = 0, \
+    .gap_y = 0, \
+    .epaper_refresh_done_isr_callback = { \
+        .callback_ptr = NULL, \
+        .args = NULL, \
+    }, \
+    .bitmap_color = SSD168X_EPAPER_BITMAP_BLACK, \
+    .non_copy_mode = false, \
+    .mirror_x = false, \
+    .mirror_y = false, \
+    .swap_xy = false, \
+    .invert_color = false, \
+    .is_rotation_done = false, \
+    ._ram_params = { \
+        .x = 0, \
+        .y = 0, \
+        .xe = 0, \
+        .ye = 0, \
+        .w = 0, \
+        .h = 0, \
+        .xs_d8 = 0, \
+        .xe_d8 = 0, \
+        .ys_m256 = 0, \
+        .ys_d256 = 0, \
+        .ye_m256 = 0, \
+        .ye_d256 = 0, \
+        .buffer_size = 0, \
+    }, \
+    .width = 0, \
+    .height = 0, \
+    .framebuffer = NULL, \
+    .framebuffer_size = 0, \
+    .next_init_mode = INIT_MODE_FAST_2, \
+    .next_sleep_mode = SLEEP_MODE_DEEP_1, \
+    .next_init_lut = NULL, \
+    .is_on = true, \
+}
 
 static esp_err_t process_bitmap(esp_lcd_panel_t *panel, const void *color_data);
 static void epaper_driver_gpio_isr_handler(void *arg);

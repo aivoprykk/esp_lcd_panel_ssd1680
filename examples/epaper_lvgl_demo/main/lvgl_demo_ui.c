@@ -187,12 +187,15 @@ static void timer_cb(lv_timer_t *timer) {
 
     else if(count == 4) {
         ESP_LOGI(TAG, "load low battery screen");
-         showLowBatScreen();
+         showLowBatScreen(0);
     }
 
     else if(count == 5) {
         ESP_LOGI(TAG, "load gps screen");
-        showGpsScreen("GPS", "gps test", "gps data", 0, angle);
+        showGpsScreen(angle);
+        set_label_text_safe(ui_info_screen.info_lbl, "GPS", 0);
+        set_label_text_safe(ui_info_screen.info_secondary_lbl, "gps", 0);
+        set_label_text_safe(ui_info_screen.info_third_lbl, "gps data", 0);
         angle += 150;
         if(angle > 3500)
         angle = 0;
@@ -257,7 +260,10 @@ static void timer_cb(lv_timer_t *timer) {
     }
     else if(count == 12) {
         ESP_LOGI(TAG, "load wifi screen");
-        showWifiScreen("majasa","10.0.0.1", "password");
+        showWifiScreen();
+        set_label_text_safe(ui_info_screen.info_lbl, "majasa", 0);
+        set_label_text_safe(ui_info_screen.info_secondary_lbl, "10.0.0.1", 0);
+        set_label_text_safe(ui_info_screen.info_third_lbl, "password", 0);
     }
     else if (count == 13) {
         ESP_LOGI(TAG, "load splash screen");
