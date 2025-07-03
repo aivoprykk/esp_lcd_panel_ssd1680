@@ -42,7 +42,9 @@ static const char *drv_msg[] = {"SSD168X_CMD_", "SET_", "err", "panel handler is
 static esp_err_t set_ram_params(epaper_panel_t *epaper_panel, int x, int y, int xe, int ye, uint8_t em, bool swap_xy) {
     ram_params_t *p = &(epaper_panel->_ram_params);
 #if (defined(CONFIG_LCD_ENABLE_DEBUG_LOG))
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG,"[%s]",__func__);
+#endif
     ESP_LOGD(TAG, "[%s] 0 x=%d, xe=%d | y=%d, ye=%d | em=%02x, swapxy:%d", __func__, x, xe, y, ye, em, swap_xy);
 #endif
     // always panel initial direction source=x gate=y
@@ -108,7 +110,9 @@ static void epaper_driver_gpio_isr_handler(void *arg) {
 }
 
 esp_err_t epaper_panel_register_event_callbacks_ssd168x(esp_lcd_panel_t *panel, epaper_panel_callbacks_t *cbs, void *user_ctx) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG,"[%s]",__func__);
+#endif
     if(panel == NULL) {
         ESP_LOGE(TAG, "%s", drv_msg[3]);
         return ESP_ERR_INVALID_ARG;
@@ -124,7 +128,9 @@ esp_err_t epaper_panel_register_event_callbacks_ssd168x(esp_lcd_panel_t *panel, 
 }
 
 esp_err_t epaper_panel_set_custom_lut_ssd168x(esp_lcd_panel_t *panel, const uint8_t *lut, size_t size) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG,"[%s]",__func__);
+#endif
     if(panel == NULL) {
         ESP_LOGE(TAG, "%s", drv_msg[3]);
         return ESP_ERR_INVALID_ARG;
@@ -143,21 +149,26 @@ esp_err_t epaper_panel_set_custom_lut_ssd168x(esp_lcd_panel_t *panel, const uint
 }
 
 static esp_err_t epaper_set_display_sequence(esp_lcd_panel_io_handle_t io, uint8_t mode) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG,"[%s] mode: %02x",__func__, mode);
     DEBUG_MEAS_START();
+#endif
     if(!mode) mode = SSD168X_PARAM_DISP_UPDATE_MODE_2;
     if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SET_DISP_UPDATE_CTRL, (const uint8_t[]){mode}, 1)!=ESP_OK) {
         ESP_LOGE(TAG, "%s%sDISP_UPDATE_CTRL %s", drv_msg[0], drv_msg[1], drv_msg[2]);
         return ESP_FAIL;
     }
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
+#endif
     return ESP_OK;
 }
 
 static esp_err_t epaper_set_lut(esp_lcd_panel_io_handle_t io, const uint8_t *lut) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG,"[%s]", __func__);
     DEBUG_MEAS_START();
-
+#endif
     if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SET_LUT_REG, lut, 153) != ESP_OK) {
         ESP_LOGE(TAG, "%s%sLUT_REG  %s", drv_msg[0], drv_msg[1], drv_msg[2]);
         return ESP_FAIL;
@@ -178,38 +189,46 @@ static esp_err_t epaper_set_lut(esp_lcd_panel_io_handle_t io, const uint8_t *lut
         return ESP_FAIL;
     }
     
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
+#endif
     return ESP_OK;
 }
 
 static esp_err_t epaper_set_ram_x_addr_counter(esp_lcd_panel_io_handle_t io, uint8_t start_x) {
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s] start_x=%02x:%hhu", __func__, start_x, start_x);
-#endif
     DEBUG_MEAS_START();
+#endif
     if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SET_INIT_X_ADDR_COUNTER, (const uint8_t[]){start_x}, 1)!=ESP_OK) {
         ESP_LOGE(TAG, "%s%sINIT_X_ADDR_COUNTER %s", drv_msg[0], drv_msg[1], drv_msg[2]);;
         return ESP_FAIL;
     }
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
+#endif
     return ESP_OK;
 }
 
 static esp_err_t epaper_set_ram_y_addr_counter(esp_lcd_panel_io_handle_t io, uint8_t start_y, uint8_t start_y1) {
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s] start_y=%02x:%hhu, start_y1:%02x:%hhu", __func__, start_y, start_y, start_y1, start_y1);
-#endif
     DEBUG_MEAS_START();
+#endif
     if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SET_INIT_Y_ADDR_COUNTER, (const uint8_t[]){start_y, start_y1}, 2)!=ESP_OK) {
         ESP_LOGE(TAG, "%s%sINIT_Y_ADDR_COUNTER %s", drv_msg[0], drv_msg[1], drv_msg[2]);
         return ESP_FAIL;
     }
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
+#endif
     return ESP_OK;
 }
 
 static esp_err_t epaper_set_cursor(esp_lcd_panel_io_handle_t io, uint8_t cur_x, uint8_t cur_y, uint8_t cur_y1) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
+#endif
     if(epaper_set_ram_x_addr_counter(io, cur_x)!=ESP_OK) {
         return ESP_FAIL;
     }
@@ -220,7 +239,9 @@ static esp_err_t epaper_set_cursor(esp_lcd_panel_io_handle_t io, uint8_t cur_x, 
 }
 
 static esp_err_t epaper_panel_set_sleep_ctrl(esp_lcd_panel_io_handle_t io, uint8_t sleep_mode) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
+#endif
     if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SLEEP_CTRL, (const uint8_t[]){sleep_mode}, 1)!=ESP_OK) {
         ESP_LOGE(TAG, "%sSLEEP_CTRL %s", drv_msg[0], drv_msg[2]);
         return ESP_FAIL;
@@ -229,7 +250,9 @@ static esp_err_t epaper_panel_set_sleep_ctrl(esp_lcd_panel_io_handle_t io, uint8
 }
 
 static esp_err_t epaper_panel_set_cursor(esp_lcd_panel_t *panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG,"[%s]",__func__);
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     ram_params_t *p = &(epaper_panel->_ram_params);
     esp_err_t ret = ESP_OK;
@@ -265,31 +288,37 @@ static esp_err_t epaper_panel_set_cursor(esp_lcd_panel_t *panel) {
 static esp_err_t epaper_set_ram_area_x(esp_lcd_panel_io_handle_t io, uint8_t start_x, uint8_t end_x) {
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s] start_x=%02x:%hhu, end_x=%02x:%hhu", __func__, start_x, start_x, end_x, end_x);
-#endif
     DEBUG_MEAS_START();
+#endif
     if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SET_RAMX_START_END_POS, (const uint8_t[]){start_x, end_x}, 2)!=ESP_OK) {
         ESP_LOGE(TAG, "%s%sRAMX_START_END_POS %s", drv_msg[0], drv_msg[1], drv_msg[2]);
         return ESP_FAIL;
     }
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
+#endif
     return ESP_OK;
 }
 
 static esp_err_t epaper_set_ram_area_y(esp_lcd_panel_io_handle_t io, uint8_t start_y, uint8_t start_y1, uint8_t end_y, uint8_t end_y1) {
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s] start_y=%02x:%hhu, start_y1:%02x:%hhu end_y=%02x:%hhu, end_y1:%02x:%hhu", __func__, start_y, start_y, start_y1, start_y1, end_y, end_y, end_y1, end_y1);
-#endif
     DEBUG_MEAS_START();
+#endif
     if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SET_RAMY_START_END_POS, (const uint8_t[]){start_y, start_y1, end_y, end_y1}, 4)!=ESP_OK) {
         ESP_LOGE(TAG, "%s%sRAMY_START_END_POS %s", drv_msg[0], drv_msg[1], drv_msg[2]);
         return ESP_FAIL;
     }
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
+#endif
     return ESP_OK;
 }
 
 static esp_err_t epaper_set_ram_area(esp_lcd_panel_io_handle_t io, uint8_t start_x, uint8_t end_x, uint8_t start_y, uint8_t start_y1, uint8_t end_y, uint8_t end_y1) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
+#endif
     // --- Set RAMX/SOUCE Start/End Position
     if(epaper_set_ram_area_x(io, start_x, end_x)!=ESP_OK) {
         return ESP_FAIL;
@@ -302,7 +331,9 @@ static esp_err_t epaper_set_ram_area(esp_lcd_panel_io_handle_t io, uint8_t start
 }
 
 static esp_err_t epaper_panel_set_ram_area(esp_lcd_panel_t *panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG,"[%s]",__func__);
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     ram_params_t *p = &(epaper_panel->_ram_params);
     esp_err_t ret = ESP_OK;
@@ -336,35 +367,47 @@ static esp_err_t epaper_panel_set_ram_area(esp_lcd_panel_t *panel) {
 }
 
 static esp_err_t panel_epaper_wait_busy(esp_lcd_panel_t *panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG,"[%s]",__func__);
     DEBUG_MEAS_START();
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     while (gpio_get_level(epaper_panel->busy_gpio_num)) {
         vTaskDelay(pdMS_TO_TICKS(15));
     }
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
+#endif
     return ESP_OK;
 }
 
 static esp_err_t epaper_panel_set_black_vram(esp_lcd_panel_io_handle_t io, const uint8_t *bw_bitmap, size_t size) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG,"[%s]",__func__);
     DEBUG_MEAS_START();
+#endif
     if(esp_lcd_panel_io_tx_color(io, SSD168X_CMD_WRITE_BLACK_VRAM, bw_bitmap, size)!=ESP_OK) {
         ESP_LOGE(TAG, "%sWRITE_BLACK_VRAM %s", drv_msg[0], drv_msg[2]);
         return ESP_FAIL;
     }
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
+#endif
     return ESP_OK;
 }
 
 static esp_err_t epaper_panel_set_red_vram(esp_lcd_panel_io_handle_t io, const uint8_t *red_bitmap, size_t size) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG,"[%s]",__func__);
     DEBUG_MEAS_START();
+#endif
     if(esp_lcd_panel_io_tx_color(io, SSD168X_CMD_WRITE_RED_VRAM, red_bitmap, size)!=ESP_OK) {
         ESP_LOGE(TAG, "%sWRITE_RED_VRAM %s", drv_msg[0], drv_msg[2]);
         return ESP_FAIL;
     }
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
+#endif
     return ESP_OK;
 }
 
@@ -389,8 +432,10 @@ static esp_err_t epaper_panel_set_vram(esp_lcd_panel_io_handle_t io, const uint8
 }
 
 static esp_err_t epaper_set_display_update_control(esp_lcd_panel_t *panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG,"[%s]",__func__);
     DEBUG_MEAS_START();
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     uint8_t duc_flag = 0x00;
     if (!(epaper_panel->_invert_color)) {
@@ -404,23 +449,31 @@ static esp_err_t epaper_set_display_update_control(esp_lcd_panel_t *panel) {
         ESP_LOGE(TAG, "%s%sDISP_UPDATE_CTRL %s", drv_msg[0], drv_msg[1], drv_msg[2]);
         return ESP_FAIL;
     }
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
+#endif
     return ESP_OK;
 }
 
 static esp_err_t epaper_set_active_display_update_sequence(esp_lcd_panel_io_handle_t io) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG,"[%s]",__func__);
     DEBUG_MEAS_START();
+#endif
     if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_ACTIVE_DISP_UPDATE_SEQ, NULL, 0)!=ESP_OK) {
         ESP_LOGE(TAG, "%sACTIVE_DISP_UPDATE_SEQ %s", drv_msg[0], drv_msg[2]);
         return ESP_FAIL;
     }
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
+#endif
     return ESP_OK;
 }
 
 static uint8_t epaper_get_ram_mode(esp_lcd_panel_t *panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     uint8_t mode = 0x03;
     if ((!(epaper_panel->_mirror_x)) && (epaper_panel->_mirror_y)) {
@@ -437,8 +490,10 @@ static uint8_t epaper_get_ram_mode(esp_lcd_panel_t *panel) {
 }
 
 static esp_err_t epaper_set_data_entry_mode(esp_lcd_panel_t *panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
     DEBUG_MEAS_START();
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     uint8_t mode = epaper_panel->_ram_params.ram_mode;
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
@@ -456,13 +511,17 @@ static esp_err_t epaper_set_data_entry_mode(esp_lcd_panel_t *panel) {
         ESP_LOGE(TAG, "%s%sDATA_ENTRY_MODE %s", drv_msg[0], drv_msg[1], drv_msg[2]);
         return ESP_FAIL;
     }
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
+#endif
     return ESP_OK;
 }
 
 static esp_err_t epaper_set_data_entry_sequence(esp_lcd_panel_t *panel, bool setcursor) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
     DEBUG_MEAS_START();
+#endif
     // epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     // set data entry mode
     if(epaper_set_data_entry_mode(panel)!=ESP_OK) {
@@ -478,19 +537,25 @@ static esp_err_t epaper_set_data_entry_sequence(esp_lcd_panel_t *panel, bool set
             return ESP_FAIL;
         }
     }
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
+#endif
     return ESP_OK;
 }
 
 static esp_err_t epaper_set_driver_output(esp_lcd_panel_t *panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
     DEBUG_MEAS_START();
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     if(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD168X_CMD_OUTPUT_CTRL, SSD168X_PARAM_OUTPUT_CTRL, 3)!=ESP_OK) {
         ESP_LOGE(TAG, "%sOUTPUT_CTRL %s", drv_msg[0], drv_msg[2]);
         return ESP_FAIL;
     }
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
+#endif
     return ESP_OK;
 }
 
@@ -503,7 +568,9 @@ esp_err_t epaper_panel_update_full_screen_ssd168x(esp_lcd_panel_t *panel) {
 }
 
 esp_err_t epaper_panel_refresh_screen_ssd168x(esp_lcd_panel_t *panel, uint8_t update_mode) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG,"[%s]",__func__);
+#endif
     if(!panel) {
         ESP_LOGE(TAG, "%s", drv_msg[3]);
         return ESP_ERR_INVALID_ARG;
@@ -528,8 +595,10 @@ esp_err_t epaper_panel_refresh_screen_ssd168x(esp_lcd_panel_t *panel, uint8_t up
 esp_err_t
 esp_lcd_new_panel_ssd168x(const esp_lcd_panel_io_handle_t io, const esp_lcd_panel_dev_config_t *const panel_dev_config,
                           esp_lcd_panel_handle_t *const ret_panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG,"[%s]",__func__);
     DEBUG_MEAS_START();
+#endif
 #if CONFIG_LCD_ENABLE_DEBUG_LOG
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
 #endif
@@ -643,7 +712,9 @@ err:
 }
 
 static esp_err_t epaper_panel_del(esp_lcd_panel_t *panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     // --- Reset used GPIO pins
     if ((epaper_panel->reset_gpio_num) >= 0) {
@@ -660,7 +731,9 @@ static esp_err_t epaper_panel_del(esp_lcd_panel_t *panel) {
 }
 
 static esp_err_t epaper_panel_gpio_reset(esp_lcd_panel_t *panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     if(gpio_set_level(epaper_panel->reset_gpio_num, epaper_panel->reset_level)){
         ESP_LOGE(TAG, "gpio_set_level error");
@@ -676,7 +749,9 @@ static esp_err_t epaper_panel_gpio_reset(esp_lcd_panel_t *panel) {
 }
 
 static esp_err_t epaper_panel_software_reset(esp_lcd_panel_t *panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     esp_lcd_panel_io_handle_t io = epaper_panel->io;
     // perform software reset
@@ -689,8 +764,10 @@ static esp_err_t epaper_panel_software_reset(esp_lcd_panel_t *panel) {
 }
 
 static esp_err_t epaper_panel_reset(esp_lcd_panel_t *panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
     DEBUG_MEAS_START();
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     // esp_lcd_panel_io_handle_t io = epaper_panel->io;
 
@@ -710,7 +787,9 @@ static esp_err_t epaper_panel_reset(esp_lcd_panel_t *panel) {
 }
 
 esp_err_t epaper_panel_set_bitmap_color_ssd168x(esp_lcd_panel_t *panel, esp_lcd_ssd168x_bitmap_color_t color) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
+#endif
     if(!panel) {
         ESP_LOGE(TAG, "%s", drv_msg[3]);
         return ESP_ERR_INVALID_ARG;
@@ -721,21 +800,27 @@ esp_err_t epaper_panel_set_bitmap_color_ssd168x(esp_lcd_panel_t *panel, esp_lcd_
 }
 
 esp_err_t epaper_panel_set_next_init_mode_ssd168x(esp_lcd_panel_t *panel, epaper_panel_init_mode_t next_init_mode) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     epaper_panel->next_init_mode = next_init_mode;
     return ESP_OK;
 }
 
 esp_err_t epaper_panel_set_next_sleep_mode_ssd168x(esp_lcd_panel_t *panel, epaper_panel_sleep_mode_t next_sleep_mode) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     epaper_panel->next_sleep_mode = next_sleep_mode;
     return ESP_OK;
 }
 
 static esp_err_t epaper_panel_init_stage_1(esp_lcd_panel_t *panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
+#endif
     // epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     // esp_lcd_panel_io_handle_t io = epaper_panel->io;
     // --- SWRST
@@ -751,8 +836,10 @@ static esp_err_t epaper_panel_init_stage_1(esp_lcd_panel_t *panel) {
 }
 
 static esp_err_t epaper_panel_init_stage_2(esp_lcd_panel_t *panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
     DEBUG_MEAS_START();
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     set_ram_params(epaper_panel, 0, 0, epaper_panel->width, epaper_panel->height, epaper_get_ram_mode(panel), false); // default
     // --- Set RAM data entry mode
@@ -764,8 +851,10 @@ static esp_err_t epaper_panel_init_stage_2(esp_lcd_panel_t *panel) {
 }
 
 static esp_err_t epaper_panel_init_stage_3(esp_lcd_panel_t *panel, const uint8_t *lut) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
     DEBUG_MEAS_START();
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     esp_lcd_panel_io_handle_t io = epaper_panel->io;
     // --- Border Waveform Control
@@ -804,8 +893,10 @@ static esp_err_t epaper_panel_init_stage_3(esp_lcd_panel_t *panel, const uint8_t
 }
 
 static esp_err_t epaper_panel_init_stage_4(esp_lcd_panel_t *panel, uint8_t color) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
     DEBUG_MEAS_START();
+#endif
     // --- Set LUT
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     // esp_lcd_panel_io_handle_t io = epaper_panel->io;
@@ -823,8 +914,10 @@ static esp_err_t epaper_panel_init_stage_4(esp_lcd_panel_t *panel, uint8_t color
 }
 
 static esp_err_t epaper_panel_init_stage_5(esp_lcd_panel_t *panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
     DEBUG_MEAS_START();
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     // esp_lcd_panel_io_handle_t io = epaper_panel->io;
     // --- Display end option
@@ -841,7 +934,9 @@ static esp_err_t epaper_panel_init_stage_5(esp_lcd_panel_t *panel) {
 }
 
 static esp_err_t epaper_panel_init(esp_lcd_panel_t *panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     // esp_lcd_panel_io_handle_t io = epaper_panel->io;
     if(epaper_panel_init_stage_1(panel)) {
@@ -877,8 +972,8 @@ esp_err_t epaper_panel_clear_screen_ssd168x(esp_lcd_panel_t *panel, uint8_t *col
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s] color: %02x panelw: %hd panelh: %hd", __func__, color, epaper_panel->width, epaper_panel->height);
-#endif
     DEBUG_MEAS_START();
+#endif
     ram_params_t *p = &(epaper_panel->_ram_params);
     set_ram_params(epaper_panel, 0, 0, epaper_panel->width, epaper_panel->height, epaper_get_ram_mode(panel), false);
     // --- Set cursor & data entry sequence
@@ -957,14 +1052,18 @@ static esp_err_t epaper_panel_draw_bitmap(esp_lcd_panel_t *panel, int x_start, i
 }
 
 static esp_err_t epaper_panel_invert_color(esp_lcd_panel_t *panel, bool invert_color_data) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s] %s", __func__, invert_color_data ? "true" : "false");
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     epaper_panel->_invert_color = invert_color_data;
     return ESP_OK;
 }
 
 static esp_err_t epaper_panel_mirror(esp_lcd_panel_t *panel, bool mirror_x, bool mirror_y) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s] %s %s", __func__, mirror_x ? "mirror_x" : "", mirror_y ? "mirror_y" : "");
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     // if (mirror_y) {
     //     if (epaper_panel->_non_copy_mode) {
@@ -979,7 +1078,9 @@ static esp_err_t epaper_panel_mirror(esp_lcd_panel_t *panel, bool mirror_x, bool
 }
 
 static esp_err_t epaper_panel_swap_xy(esp_lcd_panel_t *panel, bool swap_axes) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s] %s", __func__, swap_axes ? "true" : "false");
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     // if (swap_axes) {
     //     if (epaper_panel->_non_copy_mode) {
@@ -992,7 +1093,9 @@ static esp_err_t epaper_panel_swap_xy(esp_lcd_panel_t *panel, bool swap_axes) {
 }
 
 static esp_err_t epaper_panel_set_gap(esp_lcd_panel_t *panel, int x_gap, int y_gap) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     epaper_panel->gap_x = x_gap;
     epaper_panel->gap_y = y_gap;
@@ -1000,8 +1103,10 @@ static esp_err_t epaper_panel_set_gap(esp_lcd_panel_t *panel, int x_gap, int y_g
 }
 
 static esp_err_t epaper_panel_disp_on_off(esp_lcd_panel_t *panel, bool on_off) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s] %s", __func__, on_off ? "on" : "off");
     DEBUG_MEAS_START();
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     esp_lcd_panel_io_handle_t io = epaper_panel->io;
     if (on_off) {
@@ -1024,7 +1129,9 @@ static esp_err_t epaper_panel_disp_on_off(esp_lcd_panel_t *panel, bool on_off) {
 }
 
 esp_err_t epaper_panel_shut_down(esp_lcd_panel_t *panel) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
+#endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     esp_lcd_panel_io_handle_t io = epaper_panel->io;
     uint8_t sleep_mode = SSD168X_PARAM_SLEEP_MODE_1;
@@ -1045,7 +1152,9 @@ esp_err_t epaper_panel_shut_down(esp_lcd_panel_t *panel) {
 }
 
 void rotate(uint8_t *img, uint8_t *fb, int width, int height, uint16_t rotation) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
+#endif
     switch (rotation) {
         case 0:
             rotate_bitmap(img, fb, width, height, 0);
@@ -1065,7 +1174,9 @@ void rotate(uint8_t *img, uint8_t *fb, int width, int height, uint16_t rotation)
 }
 
 void rotate_bitmap(unsigned char *src, unsigned char *dest, int width, int height, unsigned char rotation) {
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
+#endif
     if(rotation==0) {
         memcpy(dest, src, width * height);
         return;
@@ -1113,7 +1224,9 @@ static esp_err_t process_bitmap(esp_lcd_panel_t *panel, const void *color_data) 
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     ram_params_t *p = &(epaper_panel->_ram_params);
 #if (defined(CONFIG_LCD_ENABLE_DEBUG_LOG))
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s] w:%hd h:%hd buffer_size:%u", __func__, p->w, p->h, p->buffer_size);
+#endif
     ESP_LOGD(TAG, "mirror_x:%d mirror_y:%d swap_xy:%d", epaper_panel->_mirror_x, epaper_panel->_mirror_y, epaper_panel->_swap_xy);
 #endif
     // --- Convert image according to configuration

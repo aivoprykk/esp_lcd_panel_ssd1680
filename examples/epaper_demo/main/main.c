@@ -41,8 +41,7 @@
 #define LCD_RESOLUTION         (LCD_H_RES * LCD_V_RES)
 #define LCD_ROW_LEN (LCD_H_RES / 8)
 #define LCD_PIXELS (LCD_V_RES * LCD_ROW_LEN)
-#define BYTE_PADDING(w) (((w + 7u) >> 3u) << 3u) // Align to nearest 8 bits
-#define LCD_PIXELS_MEM_ALIGNED (LCD_H_RES * BYTE_PADDING(LCD_V_RES))
+#define LCD_PIXELS_MEM_ALIGNED (LCD_H_RES * ROUND_UP_TO_8(LCD_V_RES))
 
 // // driver resolution
 // #define SSD1680_MEM_SOURCE_SIZE   176   // driver source size (x)
