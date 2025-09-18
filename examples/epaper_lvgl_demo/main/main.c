@@ -53,14 +53,14 @@ extern lv_obj_t *ui_InfoScreen;
 static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
 static lv_disp_drv_t disp_drv;      // contains callback functions
 
-bool _lvgl_lock(int timeout_ms) {
+bool _drv_lock(int timeout_ms) {
     // Convert timeout in milliseconds to FreeRTOS ticks
     // If `timeout_ms` is set to -1, the program will block until the condition is met
     const TickType_t timeout_ticks = (timeout_ms == -1) ? portMAX_DELAY : pdMS_TO_TICKS(timeout_ms);
     return xSemaphoreTake(panel_refreshing_sem, timeout_ticks) == pdTRUE;
 }
 
-void _lvgl_unlock(void) {
+void _drv_unlock(void) {
     xSemaphoreGive(panel_refreshing_sem);
 }
 
