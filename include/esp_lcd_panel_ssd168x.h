@@ -1,14 +1,14 @@
 #ifndef BD037828_E005_4B81_87EC_7A54E4146595
 #define BD037828_E005_4B81_87EC_7A54E4146595
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 #include "esp_lcd_panel_vendor.h"
 #include "esp_lcd_panel_interface.h"
 #include "esp_lcd_panel_io.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /**
 * @brief Prototype of ssd168x driver event callback
@@ -27,6 +27,35 @@ typedef bool (*esp_lcd_epaper_panel_cb_t)(const esp_lcd_panel_handle_t handle, c
 typedef struct {
     esp_lcd_epaper_panel_cb_t on_epaper_refresh_done;  /*!< Callback invoked when e-paper refresh finishes */
 } epaper_panel_callbacks_t;
+
+typedef struct {
+    int16_t x;
+    int16_t y;
+} esp_lcd_ssd168x_point_t;
+
+typedef struct esp_lcd_ssd168x_area_s {
+    int16_t x1;
+    int16_t y1;
+    int16_t x2;
+    int16_t y2;
+} esp_lcd_ssd168x_area_t;
+
+/**
+ * @brief Pixel conversion callback for rotate_bitmap function
+ * 
+ * This callback allows the caller to provide custom pixel conversion logic
+ * when rotating bitmaps, keeping the driver independent of specific libraries like LVGL.
+ *
+ * @param[in] src_data Source pixel data
+ * @param[in] src_x Source X coordinate
+ * @param[in] src_y Source Y coordinate
+ * @param[in] src_w Source width
+ * @param[in] src_h Source height
+ * @param[in] data_format Custom data format parameter (e.g., LVGL version info)
+ * @param[in] user_data User data passed to rotate_bitmap
+ * @return uint8_t Converted pixel value (0 or 1 for monochrome)
+ */
+typedef uint8_t (*pixel_convert_cb_t)(const unsigned char *src_data, esp_lcd_ssd168x_area_t src_area, int rotation, int data_format, void *user_data);
 
 /**
  * @brief Type of additional configuration needed by ssd168x e-paper panel
@@ -153,6 +182,28 @@ esp_err_t epaper_panel_init_screen_ssd168x(esp_lcd_panel_t *panel, epaper_panel_
 esp_err_t epaper_panel_set_next_init_mode_ssd168x(esp_lcd_panel_t *panel, epaper_panel_init_mode_t next_init_mode);
 esp_err_t epaper_panel_shut_down(esp_lcd_panel_t *panel);
 esp_err_t epaper_panel_update_full_screen_ssd168x(esp_lcd_panel_t *panel);
+bool epaper_panel_is_in_non_copy_mode_ssd168x(esp_lcd_panel_t *panel);
+
+/**
+ * @brief Rotate bitmap data with optional pixel conversion
+ * 
+ * @note This function rotates bitmap data and optionally converts pixels
+ *       using a user-provided callback. For raw bitmap data, pass NULL
+ *       for the conversion callback. For LVGL or other color formats,
+ *       provide a conversion callback to transform pixels to monochrome.
+ *
+ * @param[in] src Source bitmap data
+ * @param[out] dest Destination buffer for rotated bitmap  
+ * @param[in] width Width of source bitmap in pixels
+ * @param[in] height Height of source bitmap in pixels
+ * @param[in] rotation Rotation angle: 0=0°, 1=90°, 2=180°, 3=270°
+ * @param[in] convert_cb Optional pixel conversion callback (NULL for raw data)
+ * @param[in] data_format Custom format parameter passed to callback
+ * @param[in] user_data User data passed to conversion callback
+ */
+void rotate_bitmap(unsigned char *src, unsigned char *dest, int width, int height, 
+                  unsigned char rotation, pixel_convert_cb_t convert_cb, 
+                  int data_format, void *user_data);
 
 typedef enum {
     SLEEP_MODE_NORMAL = 0x00,

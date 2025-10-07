@@ -3,13 +3,3 @@ dependencies:
   lvgl/lvgl: "=8.4"
   esp_lcd_panel_ssd1680: 
     path: "../../../../esp_lcd_panel_ssd1680"
-  logger_common: 
-    path: "../../../../logger_common"
-  strutil: 
-    path: "../../../../strutil"
-  display:
-    path: "../../../../display"
-  logger_adc:
-    path: "../../../../logger_adc"
-  logger_button:
-    path: "../../../../logger_button"

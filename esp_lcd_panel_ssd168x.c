@@ -8,37 +8,37 @@
 #define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
 #endif
 #include "driver/gpio.h"
-// #include "esp_attr.h"
-// #include "esp_check.h"
-#include "esp_lcd_panel_interface.h"
-#include "esp_lcd_panel_io.h"
-#include "esp_lcd_panel_ssd168x.h"
-#include "esp_lcd_panel_vendor.h"
 #include "esp_lcd_ssd168x_private.h"
+#include "esp_lcd_ssd168x_cmds.h"
 #include "esp_log.h"
 #include "esp_memory_utils.h"
 
-#define SSD168X_LUT_SIZE 159
-
-#if defined(CONFIG_SSD168X_PANEL_SSD1680)
-#define SSD168X_SOURCE_SIZE 176
-#define SSD168X_GATE_SIZE 296
-#endif
-#if defined(CONFIG_SSD168X_PANEL_SSD1681)
-#define SSD168X_SOURCE_SIZE 200
-#define SSD168X_GATE_SIZE 200
-#endif
-#if !defined(SSD168X_SOURCE_SIZE)
-#define SSD168X_SOURCE_SIZE 0
-#endif
-#if !defined(SSD168X_GATE_SIZE)
-#define SSD168X_GATE_SIZE 0
-#endif
-
-#define SSD168X_RAM_SIZE (SSD168X_SOURCE_SIZE * SSD168X_GATE_SIZE / 8)  // 6512
-
 static const char *TAG = "lcd_panel.epaper";
 static const char *drv_msg[] = {"SSD168X_CMD_", "SET_", "err", "panel handler is NULL"};
+
+// RAM mode lookup table for cursor and area settings
+typedef struct {
+    bool x_increase;  // true = increase, false = decrease
+    bool y_increase;  // true = increase, false = decrease
+} ram_mode_config_t;
+
+static const ram_mode_config_t ram_mode_table[8] = {
+    {false, false}, // 0x00: x decrease, y decrease
+    {true,  false}, // 0x01: x increase, y decrease  
+    {false, true},  // 0x02: x decrease, y increase
+    {true,  true},  // 0x03: x increase, y increase (normal mode)
+    {false, false}, // 0x04: x decrease, y decrease (xy changed)
+    {true,  false}, // 0x05: x increase, y decrease (xy changed)
+    {false, true},  // 0x06: x decrease, y increase (xy changed)
+    {true,  true},  // 0x07: x increase, y increase (xy changed)
+};
+
+#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
+static const char* const mode_strings[8] = {
+    "000", "001", "010", "011", "100", "101", "110", "111"
+};
+#endif
+
 static esp_err_t set_ram_params(epaper_panel_t *epaper_panel, int x, int y, int xe, int ye, uint8_t em, bool swap_xy) {
     ram_params_t *p = &(epaper_panel->_ram_params);
 #if (defined(CONFIG_LCD_ENABLE_DEBUG_LOG))
@@ -80,7 +80,7 @@ static esp_err_t set_ram_params(epaper_panel_t *epaper_panel, int x, int y, int 
     // p->x -= p->x % 8;
 #if (defined(CONFIG_LCD_ENABLE_DEBUG_LOG))
     ESP_LOGD(TAG, "[%s] 1 x=%d, xe=%d, w=%d | y=%d, ye=%d, h=%d", __func__, p->x, p->xe, p->w, p->y, p->ye, p->h);
-    ESP_RETURN_ON_FALSE((p->w > 0) && (p->h > 0), ESP_ERR_INVALID_ARG, TAG, "Invalid x,y,xe,ye");
+    SSD168X_RETURN_ON_FALSE((p->w > 0) && (p->h > 0), ESP_ERR_INVALID_ARG, TAG, "Invalid x,y,xe,ye");
 #endif
     p->buffer_size = (((p->w + 7) >> 3u) * p->h);
     p->xs_d8 = ((p->x >> 3u) & 0xff);                 // startx/8 means (x >> 3u)
@@ -149,64 +149,34 @@ esp_err_t epaper_panel_set_custom_lut_ssd168x(esp_lcd_panel_t *panel, const uint
 }
 
 static esp_err_t epaper_set_display_sequence(esp_lcd_panel_io_handle_t io, uint8_t mode) {
-#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG,"[%s] mode: %02x",__func__, mode);
-    DEBUG_MEAS_START();
-#endif
+    SSD168X_DEBUG_MEAS_START();
     if(!mode) mode = SSD168X_PARAM_DISP_UPDATE_MODE_2;
-    if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SET_DISP_UPDATE_CTRL, (const uint8_t[]){mode}, 1)!=ESP_OK) {
-        ESP_LOGE(TAG, "%s%sDISP_UPDATE_CTRL %s", drv_msg[0], drv_msg[1], drv_msg[2]);
-        return ESP_FAIL;
-    }
-#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
-    DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
-#endif
+    SSD168X_CHECK_IO_TX_PARAM(io, SSD168X_CMD_SET_DISP_UPDATE_CTRL, (const uint8_t[]){mode}, 1, "DISP_UPDATE_CTRL");
+    SSD168X_DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
     return ESP_OK;
 }
 
 static esp_err_t epaper_set_lut(esp_lcd_panel_io_handle_t io, const uint8_t *lut) {
-#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG,"[%s]", __func__);
-    DEBUG_MEAS_START();
-#endif
-    if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SET_LUT_REG, lut, 153) != ESP_OK) {
-        ESP_LOGE(TAG, "%s%sLUT_REG  %s", drv_msg[0], drv_msg[1], drv_msg[2]);
-        return ESP_FAIL;
-    }
-    if(epaper_set_display_sequence(io, lut[153]) != ESP_OK) {
-        return ESP_FAIL;
-    }
-    if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SET_GATE_DRIVING_VOLTAGE, (const uint8_t[]){lut[154]}, 1) != ESP_OK) {
-        ESP_LOGE(TAG, "%s%sGATE_DRIVING_VOLTAGE  %s", drv_msg[0], drv_msg[1], drv_msg[2]);
-        return ESP_FAIL;
-    }
-    if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SET_SRC_DRIVING_VOLTAGE, (const uint8_t[]){lut[155], lut[156], lut[157]}, 3) != ESP_OK) {
-        ESP_LOGE(TAG, "%s%sSRC_DRIVING_VOLTAGE  %s", drv_msg[0], drv_msg[1], drv_msg[2]);
-        return ESP_FAIL;
-    }
-    if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SET_VCOM_REG, (const uint8_t[]){lut[158]}, 1) != ESP_OK) {
-        ESP_LOGE(TAG, "%s%sVCOM_REG  %s", drv_msg[0], drv_msg[1], drv_msg[2]);
-        return ESP_FAIL;
-    }
+    SSD168X_DEBUG_MEAS_START();
+    SSD168X_CHECK_IO_TX_PARAM(io, SSD168X_CMD_SET_LUT_REG, lut, 153, "LUT_REG");
+    SSD168X_CHECK_FUNCTION_CALL(epaper_set_display_sequence(io, lut[153]), "epaper_set_display_sequence failed");
     
-#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
-    DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
-#endif
+    // Use direct pointer arithmetic to avoid temporary array allocations
+    SSD168X_CHECK_IO_TX_PARAM(io, SSD168X_CMD_SET_GATE_DRIVING_VOLTAGE, &lut[154], 1, "GATE_DRIVING_VOLTAGE");
+    SSD168X_CHECK_IO_TX_PARAM(io, SSD168X_CMD_SET_SRC_DRIVING_VOLTAGE, &lut[155], 3, "SRC_DRIVING_VOLTAGE");
+    SSD168X_CHECK_IO_TX_PARAM(io, SSD168X_CMD_SET_VCOM_REG, &lut[158], 1, "VCOM_REG");
+    
+    SSD168X_DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
     return ESP_OK;
 }
 
 static esp_err_t epaper_set_ram_x_addr_counter(esp_lcd_panel_io_handle_t io, uint8_t start_x) {
-#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s] start_x=%02x:%hhu", __func__, start_x, start_x);
-    DEBUG_MEAS_START();
-#endif
-    if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SET_INIT_X_ADDR_COUNTER, (const uint8_t[]){start_x}, 1)!=ESP_OK) {
-        ESP_LOGE(TAG, "%s%sINIT_X_ADDR_COUNTER %s", drv_msg[0], drv_msg[1], drv_msg[2]);;
-        return ESP_FAIL;
-    }
-#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
-    DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
-#endif
+    SSD168X_DEBUG_MEAS_START();
+    SSD168X_CHECK_IO_TX_PARAM(io, SSD168X_CMD_SET_INIT_X_ADDR_COUNTER, &start_x, 1, "INIT_X_ADDR_COUNTER");
+    SSD168X_DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
     return ESP_OK;
 }
 
@@ -215,10 +185,8 @@ static esp_err_t epaper_set_ram_y_addr_counter(esp_lcd_panel_io_handle_t io, uin
     DEBUG_LOG(TAG, "[%s] start_y=%02x:%hhu, start_y1:%02x:%hhu", __func__, start_y, start_y, start_y1, start_y1);
     DEBUG_MEAS_START();
 #endif
-    if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SET_INIT_Y_ADDR_COUNTER, (const uint8_t[]){start_y, start_y1}, 2)!=ESP_OK) {
-        ESP_LOGE(TAG, "%s%sINIT_Y_ADDR_COUNTER %s", drv_msg[0], drv_msg[1], drv_msg[2]);
-        return ESP_FAIL;
-    }
+    const uint8_t params[] = {start_y, start_y1};
+    SSD168X_CHECK_IO_TX_PARAM(io, SSD168X_CMD_SET_INIT_Y_ADDR_COUNTER, params, 2, "INIT_Y_ADDR_COUNTER");
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
 #endif
@@ -229,12 +197,8 @@ static esp_err_t epaper_set_cursor(esp_lcd_panel_io_handle_t io, uint8_t cur_x, 
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
 #endif
-    if(epaper_set_ram_x_addr_counter(io, cur_x)!=ESP_OK) {
-        return ESP_FAIL;
-    }
-    if(epaper_set_ram_y_addr_counter(io, cur_y, cur_y1)!=ESP_OK) {
-        return ESP_FAIL;
-    }
+    SSD168X_CHECK_FUNCTION_CALL(epaper_set_ram_x_addr_counter(io, cur_x), "epaper_set_ram_x_addr_counter failed");
+    SSD168X_CHECK_FUNCTION_CALL(epaper_set_ram_y_addr_counter(io, cur_y, cur_y1), "epaper_set_ram_y_addr_counter failed");
     return ESP_OK;
 }
 
@@ -242,10 +206,8 @@ static esp_err_t epaper_panel_set_sleep_ctrl(esp_lcd_panel_io_handle_t io, uint8
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
 #endif
-    if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SLEEP_CTRL, (const uint8_t[]){sleep_mode}, 1)!=ESP_OK) {
-        ESP_LOGE(TAG, "%sSLEEP_CTRL %s", drv_msg[0], drv_msg[2]);
-        return ESP_FAIL;
-    }
+    const uint8_t params[] = {sleep_mode};
+    SSD168X_CHECK_IO_TX_PARAM(io, SSD168X_CMD_SLEEP_CTRL, params, 1, "SLEEP_CTRL");
     return ESP_OK;
 }
 
@@ -255,7 +217,6 @@ static esp_err_t epaper_panel_set_cursor(esp_lcd_panel_t *panel) {
 #endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     ram_params_t *p = &(epaper_panel->_ram_params);
-    esp_err_t ret = ESP_OK;
     uint8_t add_x = 0, add_xx = 0;
 #ifdef CONFIG_SSD168X_PANEL_SSD1680
 #if defined CONFIG_SSD168X_SCREEN_GDEY0213B74
@@ -264,25 +225,13 @@ static esp_err_t epaper_panel_set_cursor(esp_lcd_panel_t *panel) {
     add_xx = 1;
 #endif
 #endif
-    switch (epaper_panel->_ram_params.ram_mode) {
-        case 0x00:                                                                                // 000 x decrease, y decrease
-        case 0x04:                                                                                // 100 x derease, y decrease : xy changed
-            ret = epaper_set_cursor(epaper_panel->io, p->xe_d8 + add_xx - add_x, p->ye_m256, p->ye_d256);  // set ram
-            break;
-        case 0x01:                                                                                 // 001 x increase, y decrease
-        case 0x05:                                                                                 // 101 x increase, y decrease : xy changed
-            ret = epaper_set_cursor(epaper_panel->io, p->xs_d8 + add_xx, p->ye_m256, p->ye_d256);  // set ram
-            break;
-        case 0x02:                                                                                // 010 x decrease, y increase
-        case 0x06:                                                                                // 110 x decrease, y increase : xy changed
-            ret = epaper_set_cursor(epaper_panel->io, p->xe_d8 + add_xx - add_x, p->ys_m256, p->ys_d256);  // set ram
-            break;
-        case 0x03:                                                                                 // 011 x increase, y increase : normal mode
-        case 0x07:                                                                                 // 111 x increase, y increase : xy changed
-            ret = epaper_set_cursor(epaper_panel->io, p->xs_d8 + add_xx, p->ys_m256, p->ys_d256);  // set ram
-            break;
-    }
-    return ret;
+    
+    const ram_mode_config_t *mode_config = &ram_mode_table[p->ram_mode & 0x07];
+    uint8_t cursor_x = mode_config->x_increase ? (p->xs_d8 + add_xx) : (p->xe_d8 + add_xx - add_x);
+    uint8_t cursor_y = mode_config->y_increase ? p->ys_m256 : p->ye_m256;
+    uint8_t cursor_y1 = mode_config->y_increase ? p->ys_d256 : p->ye_d256;
+    
+    return epaper_set_cursor(epaper_panel->io, cursor_x, cursor_y, cursor_y1);
 }
 
 static esp_err_t epaper_set_ram_area_x(esp_lcd_panel_io_handle_t io, uint8_t start_x, uint8_t end_x) {
@@ -290,10 +239,8 @@ static esp_err_t epaper_set_ram_area_x(esp_lcd_panel_io_handle_t io, uint8_t sta
     DEBUG_LOG(TAG, "[%s] start_x=%02x:%hhu, end_x=%02x:%hhu", __func__, start_x, start_x, end_x, end_x);
     DEBUG_MEAS_START();
 #endif
-    if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SET_RAMX_START_END_POS, (const uint8_t[]){start_x, end_x}, 2)!=ESP_OK) {
-        ESP_LOGE(TAG, "%s%sRAMX_START_END_POS %s", drv_msg[0], drv_msg[1], drv_msg[2]);
-        return ESP_FAIL;
-    }
+    const uint8_t params[] = {start_x, end_x};
+    SSD168X_CHECK_IO_TX_PARAM(io, SSD168X_CMD_SET_RAMX_START_END_POS, params, 2, "RAMX_START_END_POS");
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
 #endif
@@ -305,10 +252,8 @@ static esp_err_t epaper_set_ram_area_y(esp_lcd_panel_io_handle_t io, uint8_t sta
     DEBUG_LOG(TAG, "[%s] start_y=%02x:%hhu, start_y1:%02x:%hhu end_y=%02x:%hhu, end_y1:%02x:%hhu", __func__, start_y, start_y, start_y1, start_y1, end_y, end_y, end_y1, end_y1);
     DEBUG_MEAS_START();
 #endif
-    if(esp_lcd_panel_io_tx_param(io, SSD168X_CMD_SET_RAMY_START_END_POS, (const uint8_t[]){start_y, start_y1, end_y, end_y1}, 4)!=ESP_OK) {
-        ESP_LOGE(TAG, "%s%sRAMY_START_END_POS %s", drv_msg[0], drv_msg[1], drv_msg[2]);
-        return ESP_FAIL;
-    }
+    const uint8_t params[] = {start_y, start_y1, end_y, end_y1};
+    SSD168X_CHECK_IO_TX_PARAM(io, SSD168X_CMD_SET_RAMY_START_END_POS, params, 4, "RAMY_START_END_POS");
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
 #endif
@@ -317,16 +262,12 @@ static esp_err_t epaper_set_ram_area_y(esp_lcd_panel_io_handle_t io, uint8_t sta
 
 static esp_err_t epaper_set_ram_area(esp_lcd_panel_io_handle_t io, uint8_t start_x, uint8_t end_x, uint8_t start_y, uint8_t start_y1, uint8_t end_y, uint8_t end_y1) {
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    DEBUG_LOG(TAG, "[%s] start_x=%02x:%hhu, end_x=%02x:%hhu, start_y=%02x:%hhu, start_y1=%02x:%hhu, end_y=%02x:%hhu, end_y1=%02x:%hhu", __func__, start_x, start_x, end_x, end_x, start_y, start_y, start_y1, start_y1, end_y, end_y, end_y1, end_y1);
 #endif
     // --- Set RAMX/SOUCE Start/End Position
-    if(epaper_set_ram_area_x(io, start_x, end_x)!=ESP_OK) {
-        return ESP_FAIL;
-    }
+    SSD168X_CHECK_FUNCTION_CALL(epaper_set_ram_area_x(io, start_x, end_x), "epaper_set_ram_area_x failed");
     // --- Set RAMY/GATE Start/End Position
-    if(epaper_set_ram_area_y(io, start_y, start_y1, end_y, end_y1)!=ESP_OK) {
-        return ESP_FAIL;
-    }
+    SSD168X_CHECK_FUNCTION_CALL(epaper_set_ram_area_y(io, start_y, start_y1, end_y, end_y1), "epaper_set_ram_area_y failed");
     return ESP_OK;
 }
 
@@ -336,7 +277,6 @@ static esp_err_t epaper_panel_set_ram_area(esp_lcd_panel_t *panel) {
 #endif
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     ram_params_t *p = &(epaper_panel->_ram_params);
-    esp_err_t ret = ESP_OK;
     uint8_t add_x = 0, add_xx = 0;
 #ifdef CONFIG_SSD168X_PANEL_SSD1680
 #if defined CONFIG_SSD168X_SCREEN_GDEY0213B74
@@ -345,25 +285,32 @@ static esp_err_t epaper_panel_set_ram_area(esp_lcd_panel_t *panel) {
     add_xx = 1;
 #endif
 #endif
-    switch (epaper_panel->_ram_params.ram_mode) {
-        case 0x00:                                                                                                                        // 000 x decrease, y decrease
-        case 0x04:                                                                                                                        // 100 x derease, y decrease : xy changed
-            ret = epaper_set_ram_area(epaper_panel->io, p->xe_d8 + add_xx - add_x, p->xs_d8 + add_xx - add_x, p->ye_m256, p->ye_d256, p->ys_m256, p->ys_d256);  // X-source area,Y-gate area
-            break;
-        case 0x01:                                                                                                                          // 001 x increase, y decrease
-        case 0x05:                                                                                                                          // 101 x increase, y decrease : xy changed
-            ret = epaper_set_ram_area(epaper_panel->io, p->xs_d8 + add_xx, p->xe_d8 + add_xx, p->ye_m256, p->ye_d256, p->ys_m256, p->ys_d256);  // X-source area,Y-gate area
-            break;
-        case 0x02:                                                                                                                        // 010 x decrease, y increase
-        case 0x06:                                                                                                                        // 110 x decrease, y increase : xy changed
-            ret = epaper_set_ram_area(epaper_panel->io, p->xe_d8 + add_xx - add_x, p->xs_d8 + add_xx - add_x, p->ys_m256, p->ys_d256, p->ye_m256, p->ye_d256);  // X-source area,Y-gate area
-            break;
-        case 0x03:                                                                                                                          // 011 x increase, y increase : normal mode
-        case 0x07:                                                                                                                          // 111 x increase, y increase : xy changed
-            ret = epaper_set_ram_area(epaper_panel->io, p->xs_d8 + add_xx, p->xe_d8 + add_xx, p->ys_m256, p->ys_d256, p->ye_m256, p->ye_d256);  // X-source area,Y-gate area
-            break;
+    
+    const ram_mode_config_t *mode_config = &ram_mode_table[p->ram_mode & 0x07];
+    uint8_t start_x, end_x;
+    uint8_t start_y, start_y1, end_y, end_y1;
+    
+    if (mode_config->x_increase) {
+        start_x = p->xs_d8 + add_xx;
+        end_x = p->xe_d8 + add_xx;
+    } else {
+        start_x = p->xe_d8 + add_xx - add_x;
+        end_x = p->xs_d8 + add_xx - add_x;
     }
-    return ret;
+    
+    if (mode_config->y_increase) {
+        start_y = p->ys_m256;
+        start_y1 = p->ys_d256;
+        end_y = p->ye_m256;
+        end_y1 = p->ye_d256;
+    } else {
+        start_y = p->ye_m256;
+        start_y1 = p->ye_d256;
+        end_y = p->ys_m256;
+        end_y1 = p->ys_d256;
+    }
+    
+    return epaper_set_ram_area(epaper_panel->io, start_x, end_x, start_y, start_y1, end_y, end_y1);
 }
 
 static esp_err_t panel_epaper_wait_busy(esp_lcd_panel_t *panel) {
@@ -386,10 +333,7 @@ static esp_err_t epaper_panel_set_black_vram(esp_lcd_panel_io_handle_t io, const
     DEBUG_LOG(TAG,"[%s]",__func__);
     DEBUG_MEAS_START();
 #endif
-    if(esp_lcd_panel_io_tx_color(io, SSD168X_CMD_WRITE_BLACK_VRAM, bw_bitmap, size)!=ESP_OK) {
-        ESP_LOGE(TAG, "%sWRITE_BLACK_VRAM %s", drv_msg[0], drv_msg[2]);
-        return ESP_FAIL;
-    }
+    SSD168X_CHECK_IO_TX_COLOR(io, SSD168X_CMD_WRITE_BLACK_VRAM, bw_bitmap, size, "WRITE_BLACK_VRAM");
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
 #endif
@@ -401,10 +345,7 @@ static esp_err_t epaper_panel_set_red_vram(esp_lcd_panel_io_handle_t io, const u
     DEBUG_LOG(TAG,"[%s]",__func__);
     DEBUG_MEAS_START();
 #endif
-    if(esp_lcd_panel_io_tx_color(io, SSD168X_CMD_WRITE_RED_VRAM, red_bitmap, size)!=ESP_OK) {
-        ESP_LOGE(TAG, "%sWRITE_RED_VRAM %s", drv_msg[0], drv_msg[2]);
-        return ESP_FAIL;
-    }
+    SSD168X_CHECK_IO_TX_COLOR(io, SSD168X_CMD_WRITE_RED_VRAM, red_bitmap, size, "WRITE_RED_VRAM");
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
 #endif
@@ -419,14 +360,10 @@ static esp_err_t epaper_panel_set_vram(esp_lcd_panel_io_handle_t io, const uint8
     // The region of BLACK VRAM and RED VRAM are set by the same series of command, the two bitmaps will be drawn at
     // the same region, so the two bitmaps can share a same size.
     if (bw_bitmap && (size > 0)) {
-        if(epaper_panel_set_black_vram(io, bw_bitmap, size)!=ESP_OK) {
-            return ESP_FAIL;
-        }
+        SSD168X_CHECK_FUNCTION_CALL(epaper_panel_set_black_vram(io, bw_bitmap, size), "epaper_panel_set_black_vram failed");
     }
     if (red_bitmap && (size > 0)) {
-        if(epaper_panel_set_red_vram(io, red_bitmap, size)!=ESP_OK) {
-            return ESP_FAIL;
-        }
+        SSD168X_CHECK_FUNCTION_CALL(epaper_panel_set_red_vram(io, red_bitmap, size), "epaper_panel_set_red_vram failed");
     }
     return ESP_OK;
 }
@@ -490,30 +427,14 @@ static uint8_t epaper_get_ram_mode(esp_lcd_panel_t *panel) {
 }
 
 static esp_err_t epaper_set_data_entry_mode(esp_lcd_panel_t *panel) {
-#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
-    DEBUG_MEAS_START();
-#endif
+    SSD168X_DEBUG_MEAS_START();
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     uint8_t mode = epaper_panel->_ram_params.ram_mode;
-#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
-    ESP_LOGD(TAG, "set ram data entry mode, mode: %02x, modestr: %s", mode,
-             mode == SSD168X_PARAM_DATA_ENTRY_MODE_0 ? "000" : mode == SSD168X_PARAM_DATA_ENTRY_MODE_1 ? "001"
-                                                           : mode == SSD168X_PARAM_DATA_ENTRY_MODE_2   ? "010"
-                                                           : mode == SSD168X_PARAM_DATA_ENTRY_MODE_3   ? "011"
-                                                           : mode == SSD168X_PARAM_DATA_ENTRY_MODE_4   ? "100"
-                                                           : mode == SSD168X_PARAM_DATA_ENTRY_MODE_5   ? "101"
-                                                           : mode == SSD168X_PARAM_DATA_ENTRY_MODE_6   ? "110"
-                                                           : mode == SSD168X_PARAM_DATA_ENTRY_MODE_7   ? "111"
-                                                                                                       : "unknown");
-#endif
-    if(esp_lcd_panel_io_tx_param(epaper_panel->io, SSD168X_CMD_DATA_ENTRY_MODE, (const uint8_t[]){mode}, 1)!=ESP_OK) {
-        ESP_LOGE(TAG, "%s%sDATA_ENTRY_MODE %s", drv_msg[0], drv_msg[1], drv_msg[2]);
-        return ESP_FAIL;
-    }
-#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
-    DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
-#endif
+    DEBUG_LOGD(TAG, "set ram data entry mode, mode: %02x, modestr: %s", mode, 
+                       (mode < 8) ? mode_strings[mode] : "unknown");
+    SSD168X_CHECK_IO_TX_PARAM(epaper_panel->io, SSD168X_CMD_DATA_ENTRY_MODE, &mode, 1, "DATA_ENTRY_MODE");
+    SSD168X_DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
     return ESP_OK;
 }
 
@@ -522,20 +443,13 @@ static esp_err_t epaper_set_data_entry_sequence(esp_lcd_panel_t *panel, bool set
     DEBUG_LOG(TAG, "[%s]", __func__);
     DEBUG_MEAS_START();
 #endif
-    // epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     // set data entry mode
-    if(epaper_set_data_entry_mode(panel)!=ESP_OK) {
-        return ESP_FAIL;
-    }
+    SSD168X_CHECK_FUNCTION_CALL(epaper_set_data_entry_mode(panel), "epaper_set_data_entry_mode failed");
     // area by cmd 0x44 0x45
-    if(epaper_panel_set_ram_area(panel)!=ESP_OK) {
-        return ESP_FAIL;
-    }
+    SSD168X_CHECK_FUNCTION_CALL(epaper_panel_set_ram_area(panel), "epaper_panel_set_ram_area failed");
     // cursor by cmd 0x4e 0x4f
     if (setcursor) {
-        if(epaper_panel_set_cursor(panel)!=ESP_OK) {
-            return ESP_FAIL;
-        }
+        SSD168X_CHECK_FUNCTION_CALL(epaper_panel_set_cursor(panel), "epaper_panel_set_cursor failed");
     }
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_MEAS_END(TAG, "[%s] took %llu us", __func__);
@@ -661,7 +575,7 @@ esp_lcd_new_panel_ssd168x(const esp_lcd_panel_io_handle_t io, const esp_lcd_pane
     }
     // size_t img_size = epaper_panel->height * epaper_panel->width / 8;
     // epaper_panel->clearbuffer = epaper_ssd168x_conf->clear_img; // heap_caps_malloc(img_size, MALLOC_CAP_DMA);
-    // ESP_RETURN_ON_FALSE(epaper_panel->_clearbuffer, ESP_ERR_NO_MEM, TAG, "epaper_panel_init allocating buffer memory err");
+    // SSD168X_RETURN_ON_FALSE(epaper_panel->_clearbuffer, ESP_ERR_NO_MEM, TAG, "epaper_panel_init allocating buffer memory err");
     // memset(epaper_panel->_clearbuffer, 0xFF, img_size);
     // --- Init GPIO
     // init RST GPIO
@@ -892,6 +806,15 @@ static esp_err_t epaper_panel_init_stage_3(esp_lcd_panel_t *panel, const uint8_t
     return ESP_OK;
 }
 
+bool epaper_panel_is_in_non_copy_mode_ssd168x(esp_lcd_panel_t *panel) {
+    if(!panel) {
+        ESP_LOGE(TAG, "%s", drv_msg[3]);
+        return false;
+    }
+    epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
+    return epaper_panel->_non_copy_mode;
+}
+
 static esp_err_t epaper_panel_init_stage_4(esp_lcd_panel_t *panel, uint8_t color) {
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
     DEBUG_LOG(TAG, "[%s]", __func__);
@@ -1000,8 +923,8 @@ static esp_err_t epaper_panel_draw_bitmap(esp_lcd_panel_t *panel, int x_start, i
     }
     // --- Assert & check configuration
     // if (epaper_panel->_non_copy_mode) {
-    //     ESP_RETURN_ON_FALSE(!(epaper_panel->_swap_xy), ESP_ERR_INVALID_ARG, TAG, "swap-xy is unavailable when enabling non-copy mode");
-    //     ESP_RETURN_ON_FALSE(!(epaper_panel->_mirror_y), ESP_ERR_INVALID_ARG, TAG, "mirror_y is unavailable when enabling non-copy mode");
+    //     SSD168X_RETURN_ON_FALSE(!(epaper_panel->_swap_xy), ESP_ERR_INVALID_ARG, TAG, "swap-xy is unavailable when enabling non-copy mode");
+    //     SSD168X_RETURN_ON_FALSE(!(epaper_panel->_mirror_y), ESP_ERR_INVALID_ARG, TAG, "mirror_y is unavailable when enabling non-copy mode");
     // }
     if(!color_data) {
         ESP_LOGE(TAG, "bitmap is NULL");
@@ -1151,69 +1074,106 @@ esp_err_t epaper_panel_shut_down(esp_lcd_panel_t *panel) {
     return ESP_OK;
 }
 
-void rotate(uint8_t *img, uint8_t *fb, int width, int height, uint16_t rotation) {
-#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
-    DEBUG_LOG(TAG, "[%s]", __func__);
-#endif
-    switch (rotation) {
-        case 0:
-            rotate_bitmap(img, fb, width, height, 0);
-            break;
-        case 90:
-            rotate_bitmap(img, fb, width, height, 1);
-            break;
-        case 180:
-            rotate_bitmap(img, fb, width, height, 2);
-            break;
-        case 270:
-            rotate_bitmap(img, fb, width, height, 3);
-            break;
-        default:
-            break;
-    }
-}
+// static void rotate(uint8_t *img, uint8_t *fb, int width, int height, uint16_t rotation) {
+// #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
+//     DEBUG_LOG(TAG, "[%s]", __func__);
+// #endif
+//     switch (rotation) {
+//         case 0:
+//             rotate_bitmap(img, fb, width, height, 0);
+//             break;
+//         case 90:
+//             rotate_bitmap(img, fb, width, height, 1);
+//             break;
+//         case 180:
+//             rotate_bitmap(img, fb, width, height, 2);
+//             break;
+//         case 270:
+//             rotate_bitmap(img, fb, width, height, 3);
+//             break;
+//         default:
+//             break;
+//     }
+// }
 
-void rotate_bitmap(unsigned char *src, unsigned char *dest, int width, int height, unsigned char rotation) {
+void rotate_bitmap(unsigned char *src, unsigned char *dest, int width, int height, 
+                  unsigned char rotation, pixel_convert_cb_t convert_cb, 
+                  int data_format, void *user_data) {
 #if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    DEBUG_LOG(TAG, "[%s] w:%d h:%d rotation:%d convert_cb:%p", __func__, 
+              width, height, rotation, (void*)convert_cb);
 #endif
-    if(rotation==0) {
-        memcpy(dest, src, width * height);
+    
+    // Fast path: no rotation + no conversion (most common case)
+    if (rotation == 0 && convert_cb == NULL) {
+        int src_byte_width = (width + 7) >> 3;
+        int byte_count = src_byte_width * height;
+        memcpy(dest, src, byte_count);
         return;
     }
-    int byte_width = (width + 7) >> 3u;        // Calculate the width in bytes
-    int byte_height = (height + 7) >> 3u;      // Calculate the height in bytes
-    int new_width = height; // paddedHeight;              // The new width is the old padded height
-    int new_height = width; // paddedWidth;              // The new height is the old padded width
-    int total_bytes = (byte_width << 3u) * (byte_height << 3u); // Total number of bytes in the src
-    int old_byte_index;
-    int new_byte_index;
-    int old_bit_index;
-    int new_bit_index;
-#if (defined(CONFIG_LCD_ENABLE_DEBUG_LOG))
-    ESP_LOGD(TAG, "[%s] w:%d h:%d byte_width:%d byte_height:%d new_width:%d new_height:%d total_bytes:%d", __func__, width, height, byte_width, byte_height, new_width, new_height, total_bytes);
-#endif
-    memset(dest, 0, total_bytes / 8);
-    for (int y = 0; y < height; y++) {  // max 122
-        for (int x = 0; x < width; x++) {  // max 250
-            old_byte_index = y * byte_width + (x >> 3u); // 0-127 * 32 + 0-32
-            old_bit_index = 7u - (x & 7u); // 0-7
-            if(rotation == 1){ // cw
-                new_byte_index = (((new_height - 1 - x) * byte_height) + ((y) >> 3u));
-                new_bit_index = y & 7u;
+    
+    // Calculate destination dimensions
+    int dest_width, dest_height;
+    if (rotation == 1 || rotation == 3) { // 90° or 270°
+        dest_width = height;
+        dest_height = width;
+    } else { // 0° or 180°
+        dest_width = width;
+        dest_height = height;
+    }
+    
+    // Calculate buffer parameters 
+    int src_byte_width = (width + 7) >> 3;
+    int dest_byte_width = (dest_width + 7) >> 3;
+    int dest_byte_height = dest_height;
+    int dest_size = dest_byte_width * dest_byte_height;
+    
+    // Clear destination buffer
+    memset(dest, 0, dest_size);
+    
+    // Unified pixel processing loop
+    for (int src_y = 0; src_y < height; src_y++) {
+        for (int src_x = 0; src_x < width; src_x++) {
+            // Get pixel value (either from raw bitmap or via callback)
+            uint8_t pixel;
+            if (convert_cb == NULL) {
+                // Read from raw bitmap
+                int src_byte_idx = src_y * src_byte_width + (src_x >> 3);
+                int src_bit_idx = 7 - (src_x & 7);
+                pixel = (src[src_byte_idx] & (1u << src_bit_idx)) ? 1 : 0;
+            } else {
+                // Use conversion callback
+                pixel = convert_cb(src, (esp_lcd_ssd168x_area_t){src_x, src_y, width, height}, rotation, data_format, user_data);
             }
-            else if(rotation==2) {
-                new_byte_index = ((height - 1 - y) * byte_width) + ((width - 1 - x) >> 3u);
-                new_bit_index = 7u - ((width - 1 - x) & 7u);
+            
+            // Skip white pixels
+            if (!pixel) {
+                continue;
             }
-            else { // if(rotation == 3){ // ccw
-                new_byte_index = (((x) * byte_height) + ((new_width - 1 - (y)) >> 3u)); // ((0..249) * 16) + ((122 - 1 - (0..121)) / 8) )
-                new_bit_index = 7u - ((new_width - 1 - (y)) & 7u);
+            
+            // Calculate destination coordinates based on rotation
+            int dest_x, dest_y;
+            if (rotation == 0) {
+                dest_x = src_x;
+                dest_y = src_y;
+            } else if (rotation == 1) { // 90° CW: (x,y) -> (y, width-1-x)
+                dest_x = src_y;
+                dest_y = width - 1 - src_x;
+            } else if (rotation == 2) { // 180°: (x,y) -> (width-1-x, height-1-y)
+                dest_x = width - 1 - src_x;
+                dest_y = height - 1 - src_y;
+            } else { // rotation == 3: 270° CW: (x,y) -> (height-1-y, x)
+                dest_x = height - 1 - src_y;
+                dest_y = src_x;
             }
-            if (BIT_CHECK(src[old_byte_index], old_bit_index)) {  // Check if x and y are within the original width and height
-                //new_byte_index--;
-                if (new_byte_index >= 0) {
-                    BIT_SET(dest[new_byte_index], new_bit_index);
+            
+            // Write to destination with bounds checking
+            if (dest_x >= 0 && dest_x < dest_width && dest_y >= 0 && dest_y < dest_height) {
+                int dest_byte_idx = dest_y * dest_byte_width + (dest_x >> 3);
+                int dest_bit_idx = 7 - (dest_x & 7);
+                
+                if (dest_byte_idx >= 0 && dest_byte_idx < dest_size) {
+                    dest[dest_byte_idx] |= (1u << dest_bit_idx);
                 }
             }
         }
@@ -1223,53 +1183,36 @@ void rotate_bitmap(unsigned char *src, unsigned char *dest, int width, int heigh
 static esp_err_t process_bitmap(esp_lcd_panel_t *panel, const void *color_data) {
     epaper_panel_t *epaper_panel = __containerof(panel, epaper_panel_t, base);
     ram_params_t *p = &(epaper_panel->_ram_params);
-#if (defined(CONFIG_LCD_ENABLE_DEBUG_LOG))
-#if defined(CONFIG_LCD_ENABLE_DEBUG_LOG)
+    
     DEBUG_LOG(TAG, "[%s] w:%hd h:%hd buffer_size:%u", __func__, p->w, p->h, p->buffer_size);
-#endif
-    ESP_LOGD(TAG, "mirror_x:%d mirror_y:%d swap_xy:%d", epaper_panel->_mirror_x, epaper_panel->_mirror_y, epaper_panel->_swap_xy);
-#endif
-    // --- Convert image according to configuration
-    if (!(epaper_panel->_non_copy_mode)) {
-        memset(epaper_panel->_framebuffer, 0xff, p->buffer_size);
+    DEBUG_LOGD(TAG, "mirror_x:%d mirror_y:%d swap_xy:%d", 
+                       epaper_panel->_mirror_x, epaper_panel->_mirror_y, epaper_panel->_swap_xy);
+    
+    // Early exit for non-copy mode (most common case)
+    if (epaper_panel->_non_copy_mode) {
+        return ESP_OK;
     }
-    if ((!(epaper_panel->_mirror_x)) && (!(epaper_panel->_mirror_y))) {
-        // No mirror 03
-        if (!(epaper_panel->_non_copy_mode)) {
-            if (epaper_panel->_swap_xy) {
-                rotate_bitmap((uint8_t *)color_data, epaper_panel->_framebuffer, p->h, p->w, 3);
-            } else {
-                memcpy(epaper_panel->_framebuffer, color_data, p->buffer_size);
-            }
+    
+    // Initialize framebuffer
+    memset(epaper_panel->_framebuffer, 0xff, p->buffer_size);
+    
+    // Determine mirror configuration for logic optimization
+    bool mirror_x = epaper_panel->_mirror_x;
+    bool mirror_y = epaper_panel->_mirror_y;
+    bool swap_xy = epaper_panel->_swap_xy;
+    
+    // Process based on transformation requirements
+    if (swap_xy) {
+        // All swap_xy cases need rotation (270° clockwise)
+        rotate_bitmap((uint8_t *)color_data, epaper_panel->_framebuffer, p->h, p->w, 3, NULL, 0, NULL);
+    } else if (mirror_x && mirror_y) {
+        // Mirror X & Y case: reverse copy
+        for (uint16_t i = p->buffer_size; i > 0; i--) {
+            epaper_panel->_framebuffer[i - 1] = ((uint8_t *)color_data)[i - 1];
         }
-    }
-    if ((!(epaper_panel->_mirror_x)) && (epaper_panel->_mirror_y)) {
-        // Mirror Y 01
-        if (epaper_panel->_swap_xy) {
-            rotate_bitmap((uint8_t *)color_data, epaper_panel->_framebuffer, p->h, p->w, 3);
-        } else {
-            memcpy(epaper_panel->_framebuffer, color_data, p->buffer_size);
-        }
-    }
-    if (((epaper_panel->_mirror_x)) && (!(epaper_panel->_mirror_y))) {
-        // Mirror X 02
-        if (!(epaper_panel->_non_copy_mode)) {
-            if (epaper_panel->_swap_xy) {  // 006
-                rotate_bitmap((uint8_t *)color_data, epaper_panel->_framebuffer, p->h, p->w, 3);
-            } else {
-                memcpy(epaper_panel->_framebuffer, color_data, p->buffer_size);
-            }
-        }
-    }
-    if (((epaper_panel->_mirror_x)) && (epaper_panel->_mirror_y)) {
-        // Mirror X & Y 00
-        if (epaper_panel->_swap_xy) {
-            rotate_bitmap((uint8_t *)color_data, epaper_panel->_framebuffer, p->h, p->w, 3);
-        } else {
-            for (uint16_t i = p->buffer_size; i > 0; i--) {
-                (epaper_panel->_framebuffer)[i] = ((uint8_t *)(color_data))[i];
-            }
-        }
+    } else {
+        // All other cases (no mirror, mirror Y only, mirror X only): direct copy
+        memcpy(epaper_panel->_framebuffer, color_data, p->buffer_size);
     }
 
     return ESP_OK;
