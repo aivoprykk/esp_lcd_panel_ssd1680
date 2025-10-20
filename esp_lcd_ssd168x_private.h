@@ -26,21 +26,16 @@ extern "C" {
 
 #if (defined(CONFIG_LCD_ENABLE_DEBUG_LOG))
 #include "esp_timer.h"
-    #define DEBUG_LOG(tag, format, ...) ESP_LOGI(tag, format, ##__VA_ARGS__)
-    #define DEBUG_LOGD(tag, format, ...) ESP_LOGD(tag, format, ##__VA_ARGS__)
-    #define DEBUG_MEAS_START() uint64_t _start = (esp_timer_get_time()), _end = 0
-    #define DEBUG_MEAS_END(a, b, ...) \
-       _end = (esp_timer_get_time());  \
-       DEBUG_LOG(a, b, ##__VA_ARGS__, (_end - _start))
-    #define SSD168X_DEBUG_MEAS_START() DEBUG_MEAS_START()
-    #define SSD168X_DEBUG_MEAS_END(tag, format, ...) DEBUG_MEAS_END(tag, format, ##__VA_ARGS__)
+    #define ILOG(tag, format, ...) ESP_LOGI(tag, format, ##__VA_ARGS__)
+    #define DLOG(tag, format, ...) ESP_LOGD(tag, format, ##__VA_ARGS__)
+    #define DMEAS_START() uint64_t _start = (esp_timer_get_time()), _end = 0
+    #define DMEAS_END(a, b, ...) \
+       ESP_LOGI(tag, "[%s] took %llu us", __func__, (esp_timer_get_time() - _start))
 #else
-    #define DEBUG_LOG(tag, format, ...)
-    #define DEBUG_LOGD(tag, format, ...)
-    #define SSD168X_DEBUG_MEAS_START()
-    #define SSD168X_DEBUG_MEAS_END(tag, format, ...)
-    #define DEBUG_MEAS_START()
-    #define DEBUG_MEAS_END(a, b, ...)
+    #define ILOG(tag, format, ...) ((void)0)
+    #define DLOG(tag, format, ...) ((void)0)
+    #define DMEAS_START() ((void)0)
+    #define DMEAS_END(a, b, ...) ((void)0)
 #endif
 
 // Error handling optimization macros
