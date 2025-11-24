@@ -8,6 +8,8 @@ extern "C" {
 #endif
 
 extern const uint8_t speed_raw_250x122[];
+extern const uint8_t speed_raw_250x128[];
+extern const uint8_t speed_raw_128x250[];
 extern const uint8_t speed_raw_122x250[];
 extern const uint8_t speed_raw_122[];
 extern const uint8_t BITMAP_128_64[];

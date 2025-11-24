@@ -1,5 +1,19 @@
 menu "SSD168X EPD Module Options"
-    if DISPLAY_DRIVER_SSD168X
+    config DISPLAY_DRIVER_SSD168X
+        bool "Enable SSD168X Module"
+        default y if HAS_BOARD_LILYGO_EPAPER_T5
+        default n
+        help
+            Selected when SSD168X driver present
+    config LCD_IS_EPD
+        bool
+        default y if DISPLAY_DRIVER_SSD168X
+        default n
+        help
+            This is an EPD (E-Ink) display. Enable this option if you are using an EPD display based on SSD1680 or SSD1681 controller.
+            Note: Enabling this option will disable some features like partial update, high refresh rate, and color depth > 1bpp.
+            These features are not supported by EPD displays.
+    if LCD_IS_EPD
     choice SSD168X_PANEL
         prompt "Installed Panel"
         default SSD168X_PANEL_SSD1680
