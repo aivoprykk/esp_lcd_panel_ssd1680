@@ -1,4 +1,8 @@
 dependencies:
   idf: ">=5.0"
-  esp_lcd_panel_ssd1680: 
+  esp_lcd_panel_ssd1680:
     path: "../../../../esp_lcd_panel_ssd1680"
+  logger_common:
+    path: "../../../../logger_common"
+  strutil:
+    path: "../../../../strutil"

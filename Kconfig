@@ -44,5 +44,34 @@ menu "SSD168X EPD Module Options"
                 Select if screen model is GDEY0154D67
     
     endchoice
+    choice
+        bool "Display Log verbosity"
+        default SSD168X_LOG_LEVEL_ERROR
+        help
+            Specify how important log should be added.
+        config SSD168X_LOG_LEVEL_TRACE
+            bool "TRACE: Log more to give detailed information"
+        config SSD168X_LOG_LEVEL_DEBUG
+            bool "DEBUG: Log general debug info"
+        config SSD168X_LOG_LEVEL_INFO
+            bool "INFO: Log important events"
+        config SSD168X_LOG_LEVEL_WARN
+            bool "WARN: Log if something unwanted happened but didn't cause a problem"
+        config SSD168X_LOG_LEVEL_ERROR
+            bool "ERROR: Only critical issues, when the system may fail"
+        config SSD168X_LOG_LEVEL_USER
+            bool "USER: Only logs added by the user"
+        config SSD168X_LOG_LEVEL_NONE
+            bool "NONE: Do not log anything"
+    endchoice
+    config SSD168X_LOG_LEVEL
+        int
+        default 0 if SSD168X_LOG_LEVEL_TRACE
+        default 1 if SSD168X_LOG_LEVEL_DEBUG
+        default 2 if SSD168X_LOG_LEVEL_INFO
+        default 3 if SSD168X_LOG_LEVEL_WARN
+        default 4 if SSD168X_LOG_LEVEL_ERROR
+        default 5 if SSD168X_LOG_LEVEL_USER
+        default 6 if SSD168X_LOG_LEVEL_NONE
     endif
 endmenu

@@ -83,12 +83,17 @@ typedef struct display_driver_s {
     lv_disp_drv_t disp_drv;      // contains callback functions
 #else
     #define BYTE_PER_PIXEL (LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_I1)) /*will be 2 for RGB565 */
+    lv_color_format_t color_format;
+    lv_display_render_mode_t render_mode;
+    size_t render_buf_size;
 #endif
     uint8_t *lv_mem_buf[LV_DRAW_BUF_SZ + CONV_BUF_SZ];
     size_t lv_mem_buf_size[LV_DRAW_BUF_SZ + CONV_BUF_SZ];
     lv_disp_t *lv_disp;
     bool is_initialized_lvgl;
-    SemaphoreHandle_t sem;
+    SemaphoreHandle_t lock_mtx;
+    SemaphoreHandle_t flush_sem;
+    SemaphoreHandle_t flush_complete_sem;
 } display_driver_t;
 
 extern display_driver_t drv;

@@ -97,8 +97,8 @@
 // NOTE: After several refreshes using SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH, you may notice the WHITE color
 // goes GRAY and contrast decrease a lot. Use the LUT below to avoid that issue.
 // NOTE: The LUT below will have the source output "keep previous output before power off", so the service life may be affected.
-// toimib, kiire 62.3108ms DEPG0213BN, 71.3116ms GDEY0213B74 partial
-#define KEEP_BIT 0x07 // keep
+// Modified for GDEY0213B74: changed KEEP_BIT to 0x07 to prevent darkening by keeping previous output
+#define KEEP_BIT 0x07 // keep to prevent darkening
 
 #define SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_O ((uint8_t[]) { \
         /* LUT 0 VS Group 0~11 */ \
@@ -116,9 +116,9 @@
         /* Group 0  TP[*A] TP[*B] SR[*AB] TP[*C] TP[*D] SR[*CD] RP[*] */ \
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
         /* Group 1  TP[*A] TP[*B] SR[*AB] TP[*C] TP[*D] SR[*CD] RP[*] */ \
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+        0x05, 0x01, 0x00, 0x05, 0x01, 0x00, 0x01, \
         /* Group 2  TP[*A] TP[*B] SR[*AB] TP[*C] TP[*D] SR[*CD] RP[*] */ \
-        0x0a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+        0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
         /* Group 3  TP[*A] TP[*B] SR[*AB] TP[*C] TP[*D] SR[*CD] RP[*] */ \
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
         /* Group 4  TP[*A] TP[*B] SR[*AB] TP[*C] TP[*D] SR[*CD] RP[*] */ \

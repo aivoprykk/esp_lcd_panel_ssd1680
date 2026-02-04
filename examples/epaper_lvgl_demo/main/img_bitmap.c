@@ -761,14 +761,19 @@ const uint8_t speed_raw_122x250_map[]  = {
 };
 
 const lv_img_dsc_t speed_raw_122x250 = {
+  #if LVGL_VERSION_MAJOR <= 8
   .header.cf = LV_IMG_CF_INDEXED_8BIT,
   .header.always_zero = 0,
   .header.reserved = 0,
+#else
+  .header.cf = LV_COLOR_FORMAT_I8,
+#endif
   .header.w = 122,
   .header.h = 250,
   .data_size = 31524,
   .data = speed_raw_122x250_map,
 };
+
 
 const uint8_t speed_raw_250x122_map[] = {
   0x00, 0x00, 0x00, 0x00, 	/*Color of index 0*/
@@ -1153,14 +1158,19 @@ const uint8_t speed_raw_250x122_map[] = {
 };
 
 const lv_img_dsc_t speed_raw_250x122 = {
+  #if LVGL_VERSION_MAJOR <= 8
   .header.cf = LV_IMG_CF_INDEXED_8BIT,
   .header.always_zero = 0,
   .header.reserved = 0,
+#else
+  .header.cf = LV_COLOR_FORMAT_I8,
+#endif
   .header.w = 250,
   .header.h = 122,
   .data_size = 31524,
   .data = speed_raw_250x122_map,
 };
+
 
 const uint8_t BITMAP_128_64[] = { /* 0X01,0X01,0X40,0X00,0X80,0X00, */
     0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF,

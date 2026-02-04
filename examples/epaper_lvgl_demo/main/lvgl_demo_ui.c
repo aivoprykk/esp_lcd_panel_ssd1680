@@ -21,6 +21,7 @@ static lv_obj_t * ui_common_panel_init(lv_obj_t * parent, uint8_t w, uint8_t h) 
     lv_obj_set_style_bg_opa(panel, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(panel, lv_color_black(), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(panel, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(panel, &ui_font_OswaldRegular36p1, LV_PART_MAIN | LV_STATE_DEFAULT);
     return panel;
 }
 
@@ -34,12 +35,16 @@ lv_obj_t * textScreenLoad() {
     int8_t rot = display_drv_get_rotation();
     display_drv_set_rotation(rot >= DISP_ROT_270 ? 0 : rot + 1); // to update lvgl disp_drv
     if(rot == DISP_ROT_90 || rot == DISP_ROT_270) {
-        lv_label_set_text(label, "LVGL 90/270\nRotation");
+        lv_label_set_text(label, "LVGL");
     } else {
-        lv_label_set_text(label, "LVGL 0/180\nRotation");
+        lv_label_set_text(label, "LVGL");
     }
     lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
-    lv_scr_load(text);
+#if (LVGL_VERSION_MAJOR >= 9)
+            lv_screen_load(text);
+#else
+            lv_scr_load(text);
+#endif
     return text;
 }
 
@@ -56,7 +61,11 @@ lv_obj_t * splashScreenLoad() {
         lv_img_set_src(img, &speed_raw_250x122);
     }
     lv_obj_align(img, LV_ALIGN_TOP_LEFT, 0, 0);
-    lv_scr_load(splash);
+#if (LVGL_VERSION_MAJOR >= 9)
+            lv_screen_load(splash);
+#else
+            lv_scr_load(splash);
+#endif
     return splash;
 }
 
@@ -69,7 +78,11 @@ lv_obj_t * blankScreenLoad(bool invert) {
     lv_obj_set_style_border_width(panel, 1, LV_PART_MAIN | LV_STATE_DEFAULT);
     int8_t rot = display_drv_get_rotation();
     display_drv_set_rotation(rot >= DISP_ROT_270 ? 0 : rot + 1); // to update lvgl disp_drv
-    lv_scr_load(panel);
+#if (LVGL_VERSION_MAJOR >= 9)
+            lv_screen_load(panel);
+#else
+            lv_scr_load(panel);
+#endif
     return panel;
 }
 
@@ -116,8 +129,8 @@ void ui_init(void) {
 }
 
 void ui_demo(void) {
-    ESP_LOGI(TAG, "create timer with 3,5sec interval");
-    lv_timer_t *timer = lv_timer_create(timer_cb, 3000, NULL);
+    ESP_LOGI(TAG, "create timer with 5sec interval");
+    lv_timer_t *timer = lv_timer_create(timer_cb, 5000, NULL);
     lv_timer_ready(timer);
 }
 
