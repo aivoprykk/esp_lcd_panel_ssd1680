@@ -208,15 +208,15 @@ void generate_debug_lut(uint8_t *output, uint8_t white_vcom, uint8_t white_vgh,
 // Test different combinations:
 void test_white_preservation(void) {
     uint8_t test_lut[156];
-    
+
     // Test 1: Moderate white voltage
     generate_debug_lut(test_lut, 0xA0, 0x60, 0x30, false);
     load_and_test(test_lut, "Test 1: A0/60/30");
-    
+
     // Test 2: Strong white voltage  
     generate_debug_lut(test_lut, 0xC0, 0x70, 0x20, false);
     load_and_test(test_lut, "Test 2: C0/70/20");
-    
+
     // Test 3: Very strong + aggressive
     generate_debug_lut(test_lut, 0xD0, 0x80, 0x10, true);
     load_and_test(test_lut, "Test 3: D0/80/10 + aggressive");
@@ -337,26 +337,26 @@ void test_partial_update(void) {
     set_display_update_control(0xF7);
     display_all_white();  // Clear screen
     trigger_update();
-    
+
     // 2. Switch to partial mode WITHOUT reset
     set_display_update_control(0xFF);
-    
+
     // 3. Test different LUTs
     const uint8_t* test_luts[] = {
         lut_partial_2cycle,
         lut_partial_enhanced,
         SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_O  // Your original
     };
-    
+
     for (int i = 0; i < 3; i++) {
         printf("Testing LUT %d\n", i);
         load_lut(test_luts[i]);
-        
+
         // Draw test pattern
         draw_test_pattern();
         trigger_update();
         delay_ms(1000);
-        
+
         // Check if white turned gray
         if (check_white_purity()) {
             printf("LUT %d: White preserved\n", i);

@@ -76,7 +76,7 @@ static bool lock(int timeout_ms) {
     // If `timeout_ms` is set to -1, the program will block until the condition is met
     if(!drv.lock_mtx)
         return true;
-        
+
     TickType_t timeout_ticks;
     // Optimize common timeout values
     if (timeout_ms == -1) {
@@ -88,7 +88,7 @@ static bool lock(int timeout_ms) {
     } else {
         timeout_ticks = pdMS_TO_TICKS(timeout_ms);
     }
-    
+
     return xSemaphoreTake(drv.lock_mtx, timeout_ticks) == pdTRUE;
 }
 
@@ -307,14 +307,14 @@ static void apply_bit_shift(uint8_t *buffer, int width, int height, int shift_bi
     int abs_shift = abs(shift_bits);
     if (abs_shift <= 0 || abs_shift >= 8) return;
     int bytes_per_row = (width + 7) / 8;
-    
+
     for (int row = 0; row < height; row++) {
         uint8_t carry = 0;
         for (int col = 0; col < bytes_per_row; col++) {
             int idx = row * bytes_per_row + col;
             uint8_t current = buffer[idx];
             uint8_t new_byte;
-            
+
             if (shift_bits > 0) {
                 // RIGHT shift
                 new_byte = (current >> abs_shift) | (carry << (8 - abs_shift));
@@ -324,7 +324,7 @@ static void apply_bit_shift(uint8_t *buffer, int width, int height, int shift_bi
                 new_byte = (current << abs_shift) | carry;
                 carry = current >> (8 - abs_shift); // Save top bits
             }
-            
+
             buffer[idx] = new_byte;
         }
     }
@@ -371,22 +371,22 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
 {
     ESP_LOGI(TAG, "[%s] x1:%"MYINT_D" y1:%"MYINT_D", x2:%"MYINT_D" y2:%"MYINT_D"", __func__, 
          area->x1, area->y1, area->x2, area->y2);
-    
+
     // Wait for previous flush to complete
     xSemaphoreTake(drv.flush_complete_sem, portMAX_DELAY);
-    
+
     esp_lcd_panel_handle_t panel_handle = GET_USER_DATA(dspl);
-    
+
     MYINT offsetx1 = area->x1;
     MYINT offsetx2 = area->x2;
     MYINT offsety1 = area->y1;
     MYINT offsety2 = area->y2;
-    
+
     // Calculate area dimensions
     MYINT len_x = abs(offsetx1 - offsetx2) + 1;
     MYINT len_y = abs(offsety1 - offsety2) + 1;
     int rotated = display_drv_get_rotation();
-    
+
     // Adjust dimensions for SSD1680 padding requirements
 // #if defined(CONFIG_SSD168X_PANEL_SSD1680)
 //     if(rotated == DISP_ROT_270 || rotated == DISP_ROT_90) {
@@ -395,7 +395,7 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
 //         len_x = ROUND_UP_TO_8(len_x);
 //     }
 // #endif
-    
+
     // Get buffer for e-paper display
     uint8_t *converted_buffer_black = drv.lv_mem_buf[LV_DRAW_BUF_SZ];
 
@@ -408,7 +408,7 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
 #else
     data_format = 2;
 #endif
-    
+
     // Convert LVGL rotation to driver rotation constants
     // Note: Driver rotation values are counter-clockwise: 1=270°, 3=90°
     unsigned char driver_rotation = 0;
@@ -418,24 +418,24 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
         case DISP_ROT_270:  driver_rotation = 1; break;  // 270° CW = driver 1  
         default:            driver_rotation = 0; break;  // 0° = driver 0
     }
-    
+
     // Use rotate_bitmap with LVGL conversion callback
     rotate_bitmap(src_data, converted_buffer_black, 
                  len_x, len_y, driver_rotation, 
                  convert_cb, data_format, (void*)len_x);
-    
+
 // #if defined(CONFIG_SSD168X_PANEL_SSD1680)
     // Apply SSD1680-specific 6-bit vertical shift compensation using helper function
     // apply_ssd1680_hardware_shift(converted_buffer_black, drv.lv_mem_buf_size[LV_DRAW_BUF_SZ], rotation);
     // apply_bit_shift(converted_buffer_black, len_x, len_y, 2); // Shift right by 6 bits
 // #endif
-    
+
     // Adjust area coordinates for rotated buffer dimensions
     MYINT final_offsetx1 = offsetx1;
     MYINT final_offsetx2 = offsetx2; 
     MYINT final_offsety1 = offsety1;
     MYINT final_offsety2 = offsety2;
-    
+
     if(driver_rotation == 1 || driver_rotation == 3) { // 270° or 90° 
         // Dimensions are swapped, so adjust area to match rotated buffer
         final_offsetx1 = offsety1;
@@ -445,7 +445,7 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
     }
 
     ESP_LOGI(TAG, "[%s] processed %"MYINT_D"x%"MYINT_D" buffer, rotation=%d", __func__, len_x, len_y, rotated);
-    
+
     // Handle display refresh - always use DISP_ROT_NONE to prevent double rotation
     // (software rotation already applied by rotate_bitmap above)
     m_area_t flush_area = {final_offsetx1, final_offsety1, final_offsetx2, final_offsety2};
@@ -482,7 +482,7 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
     flush_count++;
     last_flush_ms = get_millis();
     // esp_event_post(UI_EVENT, UI_EVENT_FLUSH_DONE, 0, 0, portMAX_DELAY);
-    
+
     // Handle semaphore signaling based on error
     if (err == ESP_OK) {
         // Refresh started successfully, callback will signal completion
@@ -717,7 +717,7 @@ void app_main(void)
     _d_init();
 
     ui_demo();
-    
+
     while (1) {
         // printf("LVGL tick handler running...\n");
         // raise the task priority of LVGL and/or reduce the handler period can improve the performance

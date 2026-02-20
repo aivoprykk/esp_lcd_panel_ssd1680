@@ -7,6 +7,7 @@
 #include "esp_lcd_ssd168x_cmds.h"
 #include "esp_lcd_ssd168x_private.h"
 #include "esp_memory_utils.h"
+#include <esp_heap_caps.h>
 
 static const char *TAG = "lcd_panel.epaper";
 static const char *drv_msg[] = {"SSD168X_CMD_", "SET_", "err",
@@ -523,7 +524,9 @@ esp_err_t esp_lcd_new_panel_ssd168x(
 	esp_err_t ret = ESP_OK;
 	// --- Allocate epaper_panel memory on HEAP
 	epaper_panel_t *epaper_panel = NULL;
-	epaper_panel = calloc(1, sizeof(epaper_panel_t));
+	FUNC_ENTRY_ARGS(TAG, "Alloc DEF mem for epaper_panel, size=%d", sizeof(epaper_panel_t));
+	epaper_panel = heap_caps_calloc(1, sizeof(epaper_panel_t),
+		MALLOC_CAP_DEFAULT);
 	if (!epaper_panel) {
 		ELOG(TAG, "no mem for epaper panel");
 		goto err;
@@ -565,9 +568,10 @@ esp_err_t esp_lcd_new_panel_ssd168x(
 	*ret_panel = &(epaper_panel->base);
 	// --- Init framebuffer
 	if (!(epaper_panel->_non_copy_mode)) {
+		FUNC_ENTRY_ARGS(TAG, "Alloc DEF mem for framebuffer, size=%d", epaper_ssd168x_conf->buffer_size);
 		epaper_panel->_framebuffer_size = epaper_ssd168x_conf->buffer_size;
 		epaper_panel->_framebuffer =
-			heap_caps_malloc(epaper_ssd168x_conf->buffer_size, MALLOC_CAP_DMA);
+			heap_caps_malloc(epaper_ssd168x_conf->buffer_size, MALLOC_CAP_DEFAULT);
 		if (!epaper_panel->_framebuffer) {
 			ELOG(TAG, "epaper_panel_init allocating buffer memory err");
 			goto err;
@@ -624,7 +628,7 @@ err:
 		if (epaper_ssd168x_conf->busy_gpio_num >= 0) {
 			gpio_reset_pin(epaper_ssd168x_conf->busy_gpio_num);
 		}
-		free(epaper_panel);
+		heap_caps_free(epaper_panel);
 	}
 	DMEAS_END(TAG);
 	return ret;
@@ -641,9 +645,9 @@ static esp_err_t epaper_panel_del(esp_lcd_panel_t *panel) {
 	// --- Free allocated RAM
 	if ((epaper_panel->_framebuffer) && (!(epaper_panel->_non_copy_mode))) {
 		// Should not free if buffer is not allocated by driver
-		free(epaper_panel->_framebuffer);
+		heap_caps_free(epaper_panel->_framebuffer);
 	}
-	free(epaper_panel);
+	heap_caps_free(epaper_panel);
 	return ESP_OK;
 }
 
